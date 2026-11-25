@@ -1,0 +1,17 @@
+{
+ "grid": [
+  "18 18 18",
+  "0 0 0",
+  "0 0 0",
+  "1 0 1",
+  "0 0 0",
+  "0 0 0",
+  "0 3 0"
+ ],
+ "orientation": 0,
+ "sleeping": true,
+ "disableStepForward": true,
+ "objectives": {
+  "ReachEdge": true
+ }
+}

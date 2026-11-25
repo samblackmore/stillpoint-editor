@@ -1,0 +1,32 @@
+{
+ "hints": [
+  {
+   "X": 1,
+   "Y": 2
+  },
+  {
+   "X": 3,
+   "Y": 3
+  }
+ ],
+ "grid": [
+  "18 18 18 18 18 18",
+  "0 0 0 0 0 0",
+  "0 0 13 0 0 0",
+  "0 0 0 0 0 0",
+  "0 0 0 0 0 0",
+  "0 0 3 0 0 0"
+ ],
+ "disableStepForward": false,
+ "sleeping": true,
+ "orientation": 0,
+ "objectives": {
+  "CollectItemObjectives": [
+   {
+    "ItemType": 13,
+    "CollectAtLeast": 1
+   }
+  ],
+  "ReachEdge": true
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "hints": [
+  {
+   "X": 2,
+   "Y": 1
+  }
+ ],
+ "grid": [
+  "1 18 1 18",
+  "0 0 0 0",
+  "1 1 0 1",
+  "0 0 0 0",
+  "3 1 0 0"
+ ],
+ "disableStepForward": false,
+ "sleeping": true,
+ "orientation": 0,
+ "objectives": {
+  "ReachEdge": true
+ }
+}

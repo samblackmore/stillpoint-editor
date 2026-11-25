@@ -1,0 +1,23 @@
+{
+ "grid": [
+  "18 18 18 18 18",
+  "0 0 1 1 0",
+  "0 1 13 1 0",
+  "0 1 0 1 13",
+  "0 0 0 0 0",
+  "1 13 3 1 1",
+  "1 1 1 1 1",
+  "1 1 1 1 1"
+ ],
+ "orientation": 0,
+ "objectives": {
+  "CollectItemObjectives": [
+   {
+    "ItemType": 13,
+    "CollectAtLeast": 3
+   }
+  ],
+  "BuildWallsNoMoreThan": 3,
+  "ReachEdge": true
+ }
+}

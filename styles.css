@@ -1,0 +1,196 @@
+/* Stillpoint HTML port — shared styles. Cozy, flat, cream + slate. */
+:root {
+  --bg: #f6f1e7;
+  --card: #fffdf6;
+  --ink: #2b2d42;
+  --muted: #8d8570;
+  --line: #e5ddc8;
+  --accent: #e5989b;
+  --accent-dark: #b35c6b;
+  --good: #70a83b;
+  --bad: #c44536;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Optimistic AI VF", system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+a { color: var(--accent-dark); }
+
+header.top {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 20px 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+header.top h1 {
+  font-size: 30px;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+header.top h1 span { color: var(--accent-dark); }
+
+header.top p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 12px 20px 60px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+}
+
+.card p { margin: 6px 0; color: #55503f; }
+
+.card p.small { font-size: 13px; color: var(--muted); }
+
+.btn {
+  display: inline-block;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover { border-color: var(--accent-dark); }
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:hover { border-color: var(--line); }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Level list */
+.level-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.level-item {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.level-item:hover { border-color: var(--accent-dark); }
+
+.level-item .name { font-weight: 600; font-size: 15px; }
+.level-item .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.level-item.done .name::after { content: " ✓"; color: var(--good); }
+
+input[type="text"], input[type="number"], select {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+
+/* Play view */
+#playView { display: none; }
+
+.play-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.play-head h2 { margin: 0; font-size: 21px; }
+.play-head .turn { color: var(--muted); font-size: 14px; }
+
+.board-wrap {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+canvas#board {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.objectives { list-style: none; margin: 0; padding: 0; }
+.objectives li {
+  padding: 4px 0;
+  font-size: 14px;
+}
+.objectives li.done { color: var(--good); text-decoration: line-through; }
+.objectives li .prog { color: var(--muted); font-size: 12px; margin-left: 6px; }
+
+.banner {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  display: none;
+}
+.banner.win { display: block; background: #e6f2d8; color: #3f6d1e; }
+.banner.lose { display: block; background: #fbe3df; color: #8f2d22; }
+
+.hint-text { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+footer.foot {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  color: var(--muted);
+  font-size: 13px;
+}

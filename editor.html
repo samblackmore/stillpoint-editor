@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stillpoint — Level editor</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .tool.selected { border-color: var(--accent-dark); background: #fbe9ea; }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid #ccc; vertical-align: -2px; margin-right: 4px; }
+  #palette { display: flex; flex-wrap: wrap; gap: 6px; }
+  .field-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  .field-row label { font-size: 14px; }
+  textarea#jsonOut {
+    width: 100%; height: 220px; font-family: ui-monospace, monospace; font-size: 12px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff;
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Stillpoint <span>· editor</span></h1>
+  <p>Paint a level, set its objectives, export the JSON — the same format the game loads.</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Board</h2>
+    <div class="field-row">
+      <label>Width <input type="number" id="gridW" value="9" min="3" max="20" style="width:64px"></label>
+      <label>Height <input type="number" id="gridH" value="9" min="3" max="20" style="width:64px"></label>
+      <label>Name <input type="text" id="levelName" placeholder="my-level" size="16"></label>
+    </div>
+    <div id="palette"></div>
+    <div class="board-wrap" style="margin-top: 12px;"><canvas id="board"></canvas></div>
+    <p class="hint-text">Click a cell to paint it with the selected tool. Paths are drawn live, so you can see where the piggy would go.</p>
+  </div>
+
+  <div class="card">
+    <h2>Objectives</h2>
+    <div class="field-row">
+      <label><input type="checkbox" id="reachEdge"> Reach the edge</label>
+      <label>Survive <input type="number" id="survive" value="0" min="0" style="width:64px"> turns (0 = off)</label>
+      <label><input type="checkbox" id="sleeping"> Enemies start asleep</label>
+      <label><input type="checkbox" id="noStep"> Disable step-forward</label>
+    </div>
+    <div class="field-row">
+      <label>Collect ≥ <input type="number" id="collectEndpoint" value="0" min="0" style="width:56px"> endpoints</label>
+      <label>Collect ≥ <input type="number" id="collectDiamond" value="0" min="0" style="width:56px"> diamonds</label>
+      <label>Collect ≥ <input type="number" id="collectLure" value="0" min="0" style="width:56px"> lures</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Export</h2>
+    <p class="small">Commit this JSON to <code>levels/store/</code> and add a line to <code>levels/index.json</code> to ship it.</p>
+    <textarea id="jsonOut" spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button class="btn primary" id="downloadBtn">Download .json</button>
+      <button class="btn" id="copyBtn">Copy JSON</button>
+      <button class="btn" id="playtestBtn">▶ Playtest in game</button>
+      <button class="btn" id="importBtn">Import from text</button>
+      <label class="btn">Open file… <input type="file" id="fileInput" accept=".json" hidden></label>
+      <a class="btn" href="index.html">← Back to game</a>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="js/editor.js"></script>
+</body>
+</html>

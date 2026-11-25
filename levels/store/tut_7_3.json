@@ -1,0 +1,21 @@
+{
+ "grid": [
+  "18 18 18 18 18",
+  "13 4 4 0 0",
+  "0 1 1 0 0",
+  "0 0 0 6 0",
+  "0 0 1 0 0",
+  "0 0 0 6 0",
+  "0 0 3 0 0"
+ ],
+ "orientation": 0,
+ "objectives": {
+  "CollectItemObjectives": [
+   {
+    "ItemType": 13,
+    "CollectAtLeast": 1
+   }
+  ],
+  "ReachEdge": true
+ }
+}

@@ -1,0 +1,82 @@
+{
+ "levels": [
+  {
+   "id": "tut_0_0",
+   "name": "First steps",
+   "group": "Tutorial",
+   "file": "levels/store/tut_0_0.json"
+  },
+  {
+   "id": "tut_0_0_A",
+   "name": "A diamond in the way",
+   "group": "Tutorial",
+   "file": "levels/store/tut_0_0_A.json"
+  },
+  {
+   "id": "tut_0_0_1",
+   "name": "Build, sparingly",
+   "group": "Tutorial",
+   "file": "levels/store/tut_0_0_1.json"
+  },
+  {
+   "id": "ai_1_1",
+   "name": "Chapter 1 \u2014 1",
+   "group": "Chapter 1",
+   "file": "levels/store/ai_1_1.json"
+  },
+  {
+   "id": "ai_1_2",
+   "name": "Chapter 1 \u2014 2",
+   "group": "Chapter 1",
+   "file": "levels/store/ai_1_2.json"
+  },
+  {
+   "id": "ai_1_3",
+   "name": "Chapter 1 \u2014 3",
+   "group": "Chapter 1",
+   "file": "levels/store/ai_1_3.json"
+  },
+  {
+   "id": "ai_1_4",
+   "name": "Chapter 1 \u2014 4",
+   "group": "Chapter 1",
+   "file": "levels/store/ai_1_4.json"
+  },
+  {
+   "id": "ai_1_5",
+   "name": "Chapter 1 \u2014 5",
+   "group": "Chapter 1",
+   "file": "levels/store/ai_1_5.json"
+  },
+  {
+   "id": "level0",
+   "name": "Survival \u2014 1",
+   "group": "Survival",
+   "file": "levels/store/level0.json"
+  },
+  {
+   "id": "level1",
+   "name": "Survival \u2014 2",
+   "group": "Survival",
+   "file": "levels/store/level1.json"
+  },
+  {
+   "id": "level3",
+   "name": "Survival \u2014 3",
+   "group": "Survival",
+   "file": "levels/store/level3.json"
+  },
+  {
+   "id": "level5",
+   "name": "Survival \u2014 4",
+   "group": "Survival",
+   "file": "levels/store/level5.json"
+  },
+  {
+   "id": "break_tut",
+   "name": "Survival \u2014 5",
+   "group": "Survival",
+   "file": "levels/store/break_tut.json"
+  }
+ ]
+}
