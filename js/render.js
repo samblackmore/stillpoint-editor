@@ -38,6 +38,37 @@
 //     at scale 1.8, flashing white between alpha 0.196 and 0.667 on a
 //     1s ping-pong lerp (Flash component). The port used to draw them
 //     always-on as yellow dot+rings — that was invented, not Unity's.
+//   - Waypoints / endpoints / lures (Waypoint, EndPoint, Lure prefabs):
+//     all three are the SAME rendering — a hexagon the full size of a
+//     wall (prefab root scale 2, so 2.0 units across) divided into six
+//     segments (hex_outline_segment_1..6.png), each a solid wedge of
+//     the ring: outer hex radius s, inner hex Rv 0.25s / Rh 0.5s, so
+//     the ring is a thick border with a hexagonal hole, not a hairline.
+//     Each segment carries its own Flash component, so it shimmers on
+//     its own interval — seg1 1.0s, seg2 1.2s, seg3 0.8s, seg4 1.4s,
+//     seg5 0.6s, seg6 1.6s — alpha ping-ponging 0.392 <-> 0.8 (lure
+//     0.784) from a shared start, drifting out of phase. The ONLY
+//     difference between the three is the base colour: waypoint
+//     (1, 0.745, 0) = #ffbe00, endpoint (0.265, 0.840, 0.629) =
+//     #44d6a0, lure (0.961, 0.478, 0.506) = #f57a81. No sprite copy
+//     is needed: canvas draws the same six wedges directly, each with
+//     its own alpha phase. Inside the hex sits the small green
+//     waypoint diamond (WaypointSize 0.6, WaypointColor) — the cell's
+//     own sprite when an endpoint is on it (Cell.BecomeEmptyAnimation).
+//     Unity's code leaves that diamond green and the path just runs
+//     into it (BecomePathOf returns early on item cells, so no dot or
+//     ring is ever drawn on one); the port lights the diamond in the
+//     path colour instead, as Sam described it — the clearer signal,
+//     parallel to how pins light up. The port used to draw the
+//     endpoint as a thin white outline and the lure as a red circle
+//     with a white dot; both were invented.
+//   - Next step: Character.cs flashes the FIRST path cell between the
+//     path colour at alpha 0.9 and white, interval 0.5s — a gentle
+//     white pulse on the cell the character is about to move to. It
+//     stops when the path changes (previousPath.First().Flash(false)).
+//     The port flashes the first dot (or the first-step ring) the same
+//     way; it follows the preview path too, since the same code sets
+//     both.
 //   - Character.cs / prefabs: the path ribbon (LineRenderer) is 1.1 world
 //     units wide, and its alpha GRADIENT is 1.0 at the character, 0.3
 //     after the first dot, fading to 0 at the far end (DrawLine) —
@@ -81,7 +112,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=13';
+import { T } from './types.js?v=14';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -93,9 +124,12 @@ const COLORS = {
   snow: 'rgba(255, 255, 255, 0.2)',
   obstacle: 'rgba(0, 0, 0, 0.35)',
   waypoint: 'rgba(68, 214, 160, 0.392)', // PastelGreen, WaypointColor
-  endpointOutline: 'rgba(255, 255, 255, 0.85)',
+  // Waypoint / endpoint / lure hex base colours (the prefabs' Flash
+  // NormalColor RGB; only the base colour differs between the three).
+  waypointHex: '#ffbe00',
+  endpointHex: '#44d6a0',
+  lureHex: '#f57a81',
   collectable: 'rgba(68, 214, 160, 0.588)', // PastelGreen, Collectable prefab
-  lure: '#f57a81',
   player: '#ffc700',
   enemy: '#f57a81',
   bomb: '#f57a81',
@@ -120,6 +154,27 @@ function hexA(hex, a) {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
+
+function hexRgb(hex) {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+// Flash ping-pong phase: Flash.cs lerps Normal -> Flash over Interval,
+// then back over Interval, so the value is a triangle wave with legs of
+// Interval seconds. `t` is a millisecond clock (Date.now()).
+function flashTri(t, intervalS) {
+  const ph = ((t / (intervalS * 1000)) % 2 + 2) % 2; // 0..2
+  return ph < 1 ? ph : 2 - ph; // 0 -> 1 -> 0
+}
+
+// Per-segment Flash intervals from the Waypoint/EndPoint/Lure prefabs
+// (seconds), in segment order: seg1 top-right edge, seg2 right vertical,
+// seg3 bottom-right, seg4 bottom-left, seg5 left vertical, seg6 top-left.
+const SEGMENT_INTERVALS = [1.0, 1.2, 0.8, 1.4, 0.6, 1.6];
 
 export class Renderer {
   constructor(canvas) {
@@ -212,6 +267,22 @@ export class Renderer {
     ctx.closePath();
   }
 
+  // The six vertices of that hex, in the same order (top, upper-right,
+  // lower-right, bottom, lower-left, upper-left), for a hex with
+  // vertical radius rv and horizontal radius rh. The waypoint hex ring
+  // uses the same shape twice: outer (s, s) and inner (0.25s, 0.5s),
+  // measured from the segment sprites.
+  hexVerts(x, y, rv, rh) {
+    return [
+      [x, y - rv],
+      [x + rh, y - rv / 2],
+      [x + rh, y + rv / 2],
+      [x, y + rv],
+      [x - rh, y + rv / 2],
+      [x - rh, y - rv / 2],
+    ];
+  }
+
   circle(x, y, r, fill) {
     const ctx = this.ctx;
     ctx.beginPath();
@@ -241,22 +312,27 @@ export class Renderer {
     ctx.fillStyle = `rgb(${Math.round(79 - 32 * d)}, ${Math.round(109 - 44 * d)}, ${Math.round(130 - 52 * d)})`;
     ctx.fillRect(0, 0, this.boardW, this.boardH);
 
-    // Pins on a path: Cell.BecomePathOf lights the pin's OWN ring in
-    // the path colour at PinSize*1.4, instead of drawing a dot on it.
-    // Collect them first so the terrain pass can draw them lit and the
-    // path pass can skip drawing anything extra on pin cells.
-    const pathPins = new Map();
+    // Cells whose own marker lights up on a path: pins (Cell.BecomePathOf
+    // scales the pin's own ring to 1.4x in the path colour) and
+    // waypoint/endpoint/lure cells (their inner diamond lights up the
+    // same way, while the hex keeps its base colour). Collect them first
+    // so the terrain/items passes can draw them lit and the path pass
+    // can skip drawing anything extra on those cells — Unity draws no
+    // dot or ring on a pin or an item cell (BecomePathOf returns early).
+    const pathTargets = new Map();
     if (showPaths) {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
         const color = CHAR_COLORS[ch.kind] || '#888';
         const path = this.pathFor(game, ch) || [];
         path.forEach((step, i) => {
-          if (game.terrain[step.row]?.[step.col] === T.PIN) {
-            const key = `${step.row},${step.col}`;
-            if (!pathPins.has(key)) {
-              pathPins.set(key, { color, alpha: Math.max(0.4, 1 - i * 0.1) });
-            }
+          const key = `${step.row},${step.col}`;
+          if (pathTargets.has(key)) return;
+          const item = game.items.get(key);
+          const isItemTarget = item && (item.type === T.ENDPOINT ||
+            item.type === T.LURE || item.type === T.WAYPOINT);
+          if (game.terrain[step.row]?.[step.col] === T.PIN || isItemTarget) {
+            pathTargets.set(key, { color, alpha: Math.max(0.4, 1 - i * 0.1) });
           }
         });
       }
@@ -288,7 +364,7 @@ export class Renderer {
           // radius (0.62-0.124)/2 = 0.248s, lineWidth 0.124s. When the
           // pin is on a path, the ring itself lights up in the path
           // colour at 1.4x (BecomePathOf) instead of gaining a dot.
-          const lit = pathPins.get(`${r},${c}`);
+          const lit = pathTargets.get(`${r},${c}`);
           const k = lit ? 1.4 : 1;
           ctx.beginPath();
           ctx.arc(x, y, s * 0.248 * k, 0, Math.PI * 2);
@@ -334,9 +410,11 @@ export class Renderer {
       const x = this.cellCenterX(r, c);
       const y = this.cellCenterY(r);
       const type = item.type;
-      if (type === T.ENDPOINT) this.drawEndpoint(x, y, s);
+      const lit = pathTargets.get(k);
+      if (type === T.ENDPOINT) this.drawHexItem(x, y, s, COLORS.endpointHex, 0.8, lit);
+      else if (type === T.LURE) this.drawHexItem(x, y, s, COLORS.lureHex, 0.784, lit);
+      else if (type === T.WAYPOINT) this.drawHexItem(x, y, s, COLORS.waypointHex, 0.8, lit);
       else if (type === T.COLLECTABLE) this.drawDiamond(x, y, 1.5, COLORS.collectable);
-      else if (type === T.LURE) this.drawLure(x, y, s);
       else if (type === T.OLDTIMER) this.drawOldTimer(x, y, s);
     }
 
@@ -407,9 +485,13 @@ export class Renderer {
           ctx.globalAlpha = 1;
         }
         path.forEach((step, i) => {
-          // A pin on the path shows itself lit (see pathPins above) —
-          // Unity draws no dot or ring on top of it (BecomePathOf).
-          if (game.terrain[step.row]?.[step.col] === T.PIN) return;
+          // A pin or an item cell on the path shows itself lit (see
+          // pathTargets above) — Unity draws no dot or ring on top of
+          // it (Cell.BecomePathOf returns early for pins and items).
+          const stepKey = `${step.row},${step.col}`;
+          if (pathTargets.has(stepKey)) return;
+          const stepItem = game.items.get(stepKey);
+          if (stepItem && stepItem.type === T.COLLECTABLE) return;
           const px = this.cellCenterX(step.row, step.col);
           const py = this.cellCenterY(step.row);
           // Unity's dot alpha (Cell.cs): 1 -> 0.4, 1 - index*0.1.
@@ -423,15 +505,27 @@ export class Renderer {
           if (p <= 0) return;
           const e = 1 - Math.pow(1 - p, 3); // ease-out: grows in from dot size
           const radius = s * (0.2 + (targetR - 0.2) * e);
-          ctx.globalAlpha = targetAlpha * e;
+          // The next step (Character.cs): the first path cell flashes
+          // between the path colour at alpha 0.9 and white, 0.5s per
+          // leg — the gentle white pulse on the cell the character is
+          // about to move to. It follows the preview path too.
+          let fill = color;
+          let alpha = targetAlpha * e;
+          if (i === 0) {
+            const tri = flashTri(Date.now(), 0.5);
+            const [r0, g0, b0] = hexRgb(color);
+            fill = `rgb(${Math.round(r0 + (255 - r0) * tri)}, ${Math.round(g0 + (255 - g0) * tri)}, ${Math.round(b0 + (255 - b0) * tri)})`;
+            alpha = (0.9 + 0.1 * tri) * e;
+          }
+          ctx.globalAlpha = alpha;
           if (i === path.length - 1) {
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = color;
+            ctx.strokeStyle = fill;
             ctx.lineWidth = 3;
             ctx.stroke();
           } else {
-            this.circle(px, py, radius, color);
+            this.circle(px, py, radius, fill);
           }
         });
         ctx.globalAlpha = 1;
@@ -514,15 +608,34 @@ export class Renderer {
     return ch.path;
   }
 
-  drawEndpoint(x, y, s) {
-    // Safe zone: a white hex outline (the EndPoint prefab is hex-outline
-    // segments) with the small green waypoint diamond inside it.
+  drawHexItem(x, y, s, base, flashMax, lit) {
+    // Waypoint / endpoint / lure: one thick shimmering hex ring, the
+    // full size of a wall (prefab root scale 2), split into six
+    // segments (hex_outline_segment_1..6.png). Each segment is a wedge
+    // of the ring — outer hex radius s, inner hex Rv 0.25s / Rh 0.5s —
+    // with its own Flash interval, alpha ping-ponging 0.392 <-> flashMax
+    // from a shared start so the segments drift out of phase. Drawn
+    // straight from canvas paths; no sprite copy is needed. Inside sits
+    // the small green waypoint diamond (WaypointSize 0.6); when a path
+    // runs into the hex it lights up in the path colour (lit) while the
+    // ring keeps its base colour.
     const ctx = this.ctx;
-    this.drawDiamond(x, y, 0.6, COLORS.waypoint);
-    this.hexPath(x, y, s * 0.96);
-    ctx.strokeStyle = COLORS.endpointOutline;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+    const outer = this.hexVerts(x, y, s, s);
+    const inner = this.hexVerts(x, y, s * 0.25, s * 0.5);
+    const t = Date.now();
+    for (let i = 0; i < 6; i++) {
+      const j = (i + 1) % 6;
+      const alpha = 0.392 + (flashMax - 0.392) * flashTri(t, SEGMENT_INTERVALS[i]);
+      ctx.beginPath();
+      ctx.moveTo(outer[i][0], outer[i][1]);
+      ctx.lineTo(outer[j][0], outer[j][1]);
+      ctx.lineTo(inner[j][0], inner[j][1]);
+      ctx.lineTo(inner[i][0], inner[i][1]);
+      ctx.closePath();
+      ctx.fillStyle = hexA(base, alpha.toFixed(3));
+      ctx.fill();
+    }
+    this.drawDiamond(x, y, 0.6, lit ? hexA(lit.color, lit.alpha) : COLORS.waypoint);
   }
 
   drawDiamond(x, y, k, fill = COLORS.collectable) {
@@ -541,12 +654,6 @@ export class Renderer {
     ctx.closePath();
     ctx.fillStyle = fill;
     ctx.fill();
-  }
-
-  drawLure(x, y, s) {
-    const ctx = this.ctx;
-    this.circle(x, y, s * 0.34, COLORS.lure);
-    this.circle(x, y, s * 0.16, 'rgba(255,255,255,0.85)');
   }
 
   drawOldTimer(x, y, s) {
