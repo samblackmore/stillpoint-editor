@@ -21,7 +21,14 @@
 //     (effectively instant) — then the ribbon fades in over 0.3s once
 //     the dots are out. The port replays that stagger every time a path
 //     recomputes (preview, commit, rewind).
-//   - One deliberate deviation: Unity's dot alpha runs 1.0 -> 0.4, but
+//   - Preview mode (UnitController.ShowGlobalPreview + GameStateController
+//     drag overlay): the previewed cell becomes bedrock and FLASHES WHITE
+//     — Flash(white, white at 0.6 alpha, 0.2s interval), a 0.4s pulse —
+//     the background darkens 0.4 toward black (World.Darken), and a
+//     GHOST HEX — a white hex outline at 0.3 alpha, 2.85 scale (~1.37x
+//     the cell), with a little pop — marks the previewed cell, while
+//     every empty cell gets a faint white hex outline (0.05-0.25 alpha).
+//     The port shows all of that while a wall preview is up, until GO.
 //     that reads as solid world objects next to the piggy, so the port
 //     runs 0.75 -> 0.3 — faded enough to read as "not in the world".
 //   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
@@ -35,7 +42,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=7';
+import { T } from './types.js?v=8';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -79,6 +86,9 @@ export class Renderer {
     this.boardW = 0;
     this.boardH = 0;
     this.pathAnims = new Map(); // char id -> {sig, start} for the stagger
+    this.bgDark = 0; // 0 = level colour, 1 = darkened (preview mode)
+    this.lastDraw = 0;
+    this.previewAnim = null; // {key, start} for the ghost-hex pop
   }
 
   layout(game, width, height) {
@@ -154,9 +164,21 @@ export class Renderer {
     const ctx = this.ctx;
     const s = this.size;
     const now = performance.now();
+    const dt = this.lastDraw ? Math.min(100, now - this.lastDraw) : 16;
+    this.lastDraw = now;
     ctx.clearRect(0, 0, this.boardW, this.boardH);
-    // Level-colour background, full bleed across the board.
-    ctx.fillStyle = COLORS.bg;
+    // Level-colour background, full bleed across the board. While a wall
+    // preview is up, Unity darkens it 0.4 toward black (World.Darken);
+    // ease toward the darkened colour over ~200ms, and back when the
+    // preview clears. #4f6d82 -> #2f415e.
+    const previewing = !!game.previewState;
+    const darkTarget = previewing ? 1 : 0;
+    const darkStep = dt / 200;
+    this.bgDark = this.bgDark < darkTarget
+      ? Math.min(darkTarget, this.bgDark + darkStep)
+      : Math.max(darkTarget, this.bgDark - darkStep);
+    const d = this.bgDark;
+    ctx.fillStyle = `rgb(${Math.round(79 - 32 * d)}, ${Math.round(109 - 44 * d)}, ${Math.round(130 - 52 * d)})`;
     ctx.fillRect(0, 0, this.boardW, this.boardH);
 
     // Terrain: in Unity a cell is a dot, a hex, a ring or a cross — never a
@@ -201,6 +223,14 @@ export class Renderer {
           this.circle(x, y, s * 0.45, COLORS.obstacle);
         } else {
           this.circle(x, y, s * 0.2, COLORS.emptyDot);
+        }
+        // While previewing, Unity's drag overlay puts a faint white hex
+        // outline on every empty cell (ShowHexOverlay, 0.05-0.25 alpha).
+        if (previewing && t === T.EMPTY && !game.items.has(`${r},${c}`)) {
+          this.hexPath(x, y, s * 0.96);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
         }
       }
     }
@@ -295,20 +325,30 @@ export class Renderer {
       }
     }
 
-    // Preview ghost wall.
+    // Preview ghost wall. Unity's previewed cell becomes bedrock and
+    // flashes white (Flash: white <-> white at 0.6 alpha, 0.2s per leg),
+    // with a white ghost-hex outline around it (0.3 alpha, ~1.37x the
+    // cell, popping in). Removing a wall keeps the faded treatment.
     if (game.previewState) {
       const { row, col, action } = game.previewState;
       const x = this.cellCenterX(row, col);
       const y = this.cellCenterY(row);
-      this.hexPath(x, y, s * 0.96);
+      const key = `${row},${col},${action}`;
+      if (!this.previewAnim || this.previewAnim.key !== key) {
+        this.previewAnim = { key, start: now };
+      }
+      const pop = Math.min(1, (now - this.previewAnim.start) / 150);
+      const pe = 1 - Math.pow(1 - pop, 3);
       if (action === 'build') {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        // White flash: triangle wave, 0.4s full cycle, alpha 1.0 <-> 0.6.
+        const phase = ((now - this.previewAnim.start) % 400) / 400;
+        const tri = phase < 0.5 ? phase * 2 : 2 - phase * 2;
+        this.hexPath(x, y, s * 0.96);
+        ctx.fillStyle = `rgba(255, 255, 255, ${(1 - 0.4 * tri).toFixed(3)})`;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
       } else {
         // Previewing a removal: fade the wall out, dashed white outline.
+        this.hexPath(x, y, s * 0.96);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
         ctx.fill();
         ctx.setLineDash([5, 4]);
@@ -317,6 +357,13 @@ export class Renderer {
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      // Ghost hex: white outline, 0.3 alpha, popping in from 1.55x to 1.37x.
+      this.hexPath(x, y, s * (1.55 - 0.18 * pe));
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    } else {
+      this.previewAnim = null;
     }
 
     // Hints.

@@ -89,7 +89,10 @@ forward plays turns with no wall until the level ends.
   the world", and they stagger in one by one (80ms per dot for the
   player, instant for enemies) with the ribbon fading in over 0.3s
   after — the RevealPathLoop choreography from Unity, replayed on every
-  path recompute.
+  path recompute. Preview mode (until GO) is Unity's too: the previewed
+  wall flashes white (0.4s pulse), the background darkens 0.4 toward
+  black, a white ghost-hex outline marks the previewed cell, and every
+  empty cell gets a faint white hex outline.
   HUD is Unity-style too: objectives panel top-left, round undo/close
   buttons top-right, big GO button bottom-right to commit a previewed wall.
 - **No tutorial speech, camera, or menus** — flat shapes, as intended.
