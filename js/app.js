@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=5';
-import { Renderer } from './render.js?v=5';
-import { parseLevel, loadLevelFile } from './levels.js?v=5';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=5';
+import { Game } from './engine.js?v=6';
+import { Renderer } from './render.js?v=6';
+import { parseLevel, loadLevelFile } from './levels.js?v=6';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=6';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -98,7 +98,7 @@ function layoutBoard() {
 
 function updateHUD() {
   if (!game) return;
-  $('turnLabel').textContent = `Turn ${game.turn}`;
+  $('turnLabel').innerHTML = `Turn <span class="obj-num">${game.turn}</span>`;
   const list = $('objectives');
   list.innerHTML = '';
   const objs = game.objectiveList();
@@ -124,7 +124,9 @@ function updateHUD() {
     if (o.progress) {
       const span = document.createElement('span');
       span.className = 'prog';
-      span.textContent = ` ${o.progress}`;
+      span.innerHTML = ` ${escapeHtml(o.progress).replace(
+        /\d+/g, (n) => `<span class="obj-num">${n}</span>`,
+      )}`;
       li.appendChild(span);
     }
     list.appendChild(li);

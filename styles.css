@@ -201,8 +201,8 @@ canvas#board {
 }
 
 .hud-objectives .objectives li.done { color: rgba(255, 255, 255, 0.65); }
-.hud-objectives .objectives li .obj-num { color: var(--board-yellow); font-weight: 700; }
 .hud-objectives .objectives li .obj-check { color: var(--board-green); font-weight: 700; }
+.hud-objectives .obj-num { color: var(--board-yellow); font-weight: 700; }
 .hud-objectives .objectives li .prog { color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-left: 6px; }
 
 .hud-turn {
