@@ -7,7 +7,7 @@
 //   D1 (row-1, col)  D2 (row+1, col)  D3 (row, col+1)  D4 (row, col-1)
 //   D5/D6: the parity-dependent diagonals.
 // Orientation "vertical" (1): the same topology with rows/columns swapped.
-import { T } from './types.js?v=8';
+import { T } from './types.js?v=9';
 
 export const ORIENTATION = { HORIZONTAL: 0, VERTICAL: 1 };
 

@@ -42,7 +42,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=8';
+import { T } from './types.js?v=9';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -170,7 +170,7 @@ export class Renderer {
     // Level-colour background, full bleed across the board. While a wall
     // preview is up, Unity darkens it 0.4 toward black (World.Darken);
     // ease toward the darkened colour over ~200ms, and back when the
-    // preview clears. #4f6d82 -> #2f415e.
+    // preview clears. #4f6d82 -> #2f414e.
     const previewing = !!game.previewState;
     const darkTarget = previewing ? 1 : 0;
     const darkStep = dt / 200;
