@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=12';
-import { Renderer } from './render.js?v=12';
-import { parseLevel, loadLevelFile } from './levels.js?v=12';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=12';
+import { Game } from './engine.js?v=13';
+import { Renderer } from './render.js?v=13';
+import { parseLevel, loadLevelFile } from './levels.js?v=13';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=13';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -72,6 +72,7 @@ function escapeHtml(s) {
 function startLevel(def, meta) {
   currentMeta = meta;
   game = new Game().loadLevel(def);
+  game.hintsShown = false; // Unity only shows hints on demand (H / ? button)
   showPlay();
   $('levelName').textContent = meta.name;
   $('statusBanner').className = 'banner';
@@ -134,6 +135,12 @@ function updateHUD() {
   $('undoBtn').disabled = game.history.length === 0;
   // GO only does something while a wall preview is showing.
   $('goBtn').disabled = !game.previewState;
+  // Hint button: only when the level has hints; it pulses gently until
+  // the player asks for them (Unity's hint button does the same).
+  const hintBtn = $('hintBtn');
+  const hasHints = (game.def.hints || []).length > 0;
+  hintBtn.style.display = hasHints ? '' : 'none';
+  hintBtn.classList.toggle('pulse', hasHints && !game.hintsShown);
   const banner = $('statusBanner');
   if (game.status === 'won') {
     banner.className = 'banner win';
@@ -162,6 +169,13 @@ function onBoardTap(ev) {
   const cell = renderer.cellAt(x, y);
   if (!cell) {
     game.clearPreview();
+    updateHUD();
+    return;
+  }
+  // Tapping a hint marker dismisses all hints (HintMarkerTap) instead
+  // of previewing a wall there.
+  if (game.hintsShown && (game.def.hints || []).some((h) => h.Y === cell.row && h.X === cell.col)) {
+    game.hintsShown = false;
     updateHUD();
     return;
   }
@@ -221,6 +235,17 @@ async function loadConfig() {
 
 document.addEventListener('DOMContentLoaded', () => {
   $('board').addEventListener('click', onBoardTap);
+  // Hints (MenuController.ShowHints): H key or the ? button shows the
+  // level's hint markers; tapping one dismisses them (see onBoardTap).
+  const showHints = () => {
+    if (!game || !(game.def.hints || []).length) return;
+    game.hintsShown = true;
+    updateHUD();
+  };
+  $('hintBtn').addEventListener('click', showHints);
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key === 'h' || ev.key === 'H') && game) showHints();
+  });
   $('undoBtn').addEventListener('click', () => {
     if (game?.rewind()) updateHUD();
   });

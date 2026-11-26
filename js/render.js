@@ -26,6 +26,18 @@
 //     only 0.625 units at PinSize 1.0 — the ring's outer diameter is
 //     0.62 units with a 0.124-unit stroke (measured from the texture
 //     and from the Unity screenshot: 42px ring vs 133px hex).
+//     A pin ON a path lights up instead of getting an extra circle:
+//     Cell.BecomePathOf scales the pin's own sprite to PinSize*1.4
+//     and tints it the path colour (alpha 1 - index*0.1, floor 0.4)
+//     — no separate dot is drawn on a pin cell.
+//   - Hints (MenuController.ShowHints): the level JSON's hints list
+//     (Level.Hints) is NOT shown by default — Unity only shows the
+//     markers when the player asks (H key / hint button), and tapping
+//     one dismisses them all (HintMarkerTap). Each marker is a white
+//     hex outline (HexagonOutlineThin, 512px at 512 PPU = 1.0 unit)
+//     at scale 1.8, flashing white between alpha 0.196 and 0.667 on a
+//     1s ping-pong lerp (Flash component). The port used to draw them
+//     always-on as yellow dot+rings — that was invented, not Unity's.
 //   - Character.cs / prefabs: the path ribbon (LineRenderer) is 1.1 world
 //     units wide, and its alpha GRADIENT is 1.0 at the character, 0.3
 //     after the first dot, fading to 0 at the far end (DrawLine) —
@@ -69,7 +81,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=12';
+import { T } from './types.js?v=13';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -90,7 +102,6 @@ const COLORS = {
   digger: '#c0935c',
   pull: '#8053f6',
   oldtimer: '#a48000',
-  hint: '#ffc700',
 };
 
 const CHAR_COLORS = {
@@ -230,6 +241,27 @@ export class Renderer {
     ctx.fillStyle = `rgb(${Math.round(79 - 32 * d)}, ${Math.round(109 - 44 * d)}, ${Math.round(130 - 52 * d)})`;
     ctx.fillRect(0, 0, this.boardW, this.boardH);
 
+    // Pins on a path: Cell.BecomePathOf lights the pin's OWN ring in
+    // the path colour at PinSize*1.4, instead of drawing a dot on it.
+    // Collect them first so the terrain pass can draw them lit and the
+    // path pass can skip drawing anything extra on pin cells.
+    const pathPins = new Map();
+    if (showPaths) {
+      for (const ch of game.chars) {
+        if (!ch.alive || ch.finished) continue;
+        const color = CHAR_COLORS[ch.kind] || '#888';
+        const path = this.pathFor(game, ch) || [];
+        path.forEach((step, i) => {
+          if (game.terrain[step.row]?.[step.col] === T.PIN) {
+            const key = `${step.row},${step.col}`;
+            if (!pathPins.has(key)) {
+              pathPins.set(key, { color, alpha: Math.max(0.4, 1 - i * 0.1) });
+            }
+          }
+        });
+      }
+    }
+
     // Terrain: in Unity a cell is a dot, a hex, a ring or a cross — never a
     // hex outline. Sizes are EmptySize/WallSize ratios from Cell.cs
     // (empty 0.4 vs wall 2.0, so the dot is 1/5 of a wall hex).
@@ -253,11 +285,15 @@ export class Renderer {
           // PinSprite is circle_thick, 500px at 800 PPU: the sprite is
           // only 0.625 units across at PinSize 1.0, so the ring's outer
           // diameter is 0.62 units with a 0.124-unit stroke — centreline
-          // radius (0.62-0.124)/2 = 0.248s, lineWidth 0.124s.
+          // radius (0.62-0.124)/2 = 0.248s, lineWidth 0.124s. When the
+          // pin is on a path, the ring itself lights up in the path
+          // colour at 1.4x (BecomePathOf) instead of gaining a dot.
+          const lit = pathPins.get(`${r},${c}`);
+          const k = lit ? 1.4 : 1;
           ctx.beginPath();
-          ctx.arc(x, y, s * 0.248, 0, Math.PI * 2);
-          ctx.strokeStyle = COLORS.pin;
-          ctx.lineWidth = Math.max(2, s * 0.124);
+          ctx.arc(x, y, s * 0.248 * k, 0, Math.PI * 2);
+          ctx.strokeStyle = lit ? hexA(lit.color, lit.alpha) : COLORS.pin;
+          ctx.lineWidth = Math.max(2, s * 0.124 * k);
           ctx.stroke();
         } else if (t === T.EDGE) {
           // EdgeSprite is a cross, PastelRed at 0.6.
@@ -371,6 +407,9 @@ export class Renderer {
           ctx.globalAlpha = 1;
         }
         path.forEach((step, i) => {
+          // A pin on the path shows itself lit (see pathPins above) —
+          // Unity draws no dot or ring on top of it (BecomePathOf).
+          if (game.terrain[step.row]?.[step.col] === T.PIN) return;
           const px = this.cellCenterX(step.row, step.col);
           const py = this.cellCenterY(step.row);
           // Unity's dot alpha (Cell.cs): 1 -> 0.4, 1 - index*0.1.
@@ -441,20 +480,23 @@ export class Renderer {
       this.previewAnim = null;
     }
 
-    // Hints.
-    const t = Date.now() / 500;
-    for (const hint of game.def.hints || []) {
-      const x = this.cellCenterX(hint.Y, hint.X);
-      const y = this.cellCenterY(hint.Y);
-      ctx.beginPath();
-      ctx.arc(x, y, s * 0.22 + Math.sin(t) * 2, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.hint;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x, y, s * 0.34, 0, Math.PI * 2);
-      ctx.strokeStyle = COLORS.hint;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+    // Hints (MenuController.ShowHints): only when asked for — the H key
+    // or the ? button sets game.hintsShown; tapping a marker dismisses
+    // them (see app.js). Each marker is a white hex outline at 1.8x,
+    // flashing white between alpha 0.196 and 0.667 on a 1s ping-pong
+    // lerp (Flash: NormalColor 50/255, FlashColor 170/255, Interval 1s).
+    if (game.hintsShown) {
+      const t = (Date.now() % 2000) / 1000; // 0..2s
+      const tri = t < 1 ? t : 2 - t; // 0 -> 1 -> 0 over the 2s cycle
+      const alpha = 0.196 + (0.667 - 0.196) * tri;
+      for (const hint of game.def.hints || []) {
+        const x = this.cellCenterX(hint.Y, hint.X);
+        const y = this.cellCenterY(hint.Y);
+        this.hexPath(x, y, s * 0.9);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
     }
 
     // Characters: plain solid circles in their prefab colours. No faces —

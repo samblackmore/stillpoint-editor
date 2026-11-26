@@ -237,6 +237,13 @@ canvas#board {
 
 .round-btn:hover { color: #fff; }
 .round-btn:disabled { opacity: 0.4; cursor: default; }
+/* The hint button pulses gently while the level has unseen hints,
+   like Unity's pulsating hint button. */
+.round-btn.pulse { animation: hint-pulse 1.6s ease-in-out infinite; }
+@keyframes hint-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
 
 .go-btn {
   position: absolute;
