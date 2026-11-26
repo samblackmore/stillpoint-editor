@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=14';
-import { Game } from './engine.js?v=14';
-import { Renderer } from './render.js?v=14';
-import { parseLevel, serializeLevel } from './levels.js?v=14';
+import { T } from './types.js?v=15';
+import { Game } from './engine.js?v=15';
+import { Renderer } from './render.js?v=15';
+import { parseLevel, serializeLevel } from './levels.js?v=15';
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,6 +16,7 @@ const TOOLS = [
   { type: T.BOMB, label: 'Bomb enemy', swatch: '#22223b' },
   { type: T.DIGGER, label: 'Digger', swatch: '#8a6d4b' },
   { type: T.ENDPOINT, label: 'Endpoint', swatch: '#70a83b' },
+  { type: T.WAYPOINT, label: 'Waypoint', swatch: '#ffbe00' },
   { type: T.COLLECTABLE, label: 'Diamond', swatch: '#e9a319' },
   { type: T.LURE, label: 'Lure', swatch: '#e76f51' },
   { type: T.PIN, label: 'Pin', swatch: '#9b5de5' },
