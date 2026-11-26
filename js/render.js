@@ -1,10 +1,14 @@
 // Canvas renderer: flat circles on a level-colour background, matching the
-// Unity board. Row 0 is the top; pointy-top odd-r layout, same as Unity
-// (World.InitCell, LevelOrientation.Horizontal): rows share a y, odd
-// rows are offset half a step, columns zig-zag. The hex itself is
-// Unity's hex_white sprite — a pointy-top hexagon stretched so its
-// width equals its height (top/bottom vertices, vertical side edges) —
-// which is exactly what tessellates at x-step 2s, y-step 1.5s.
+// Unity board. Row 0 is the BOTTOM: Unity's world Y increases upward
+// (World.InitCell: posY = 1.5*row), so JSON row 0 sits at the bottom of
+// the screen and the top row is row h-1 — the port was rendering it
+// upside-down until this was fixed. Pointy-top odd-r layout, same as
+// Unity (LevelOrientation.Horizontal): rows share a y, odd rows are
+// offset half a step (the offset keys off the JSON row, not the screen
+// row), columns zig-zag. The hex itself is Unity's hex_white sprite —
+// a pointy-top hexagon stretched so its width equals its height
+// (top/bottom vertices, vertical side edges) — which is exactly what
+// tessellates at x-step 2s, y-step 1.5s.
 //
 // Every colour/size below is taken from the Unity repo, not invented:
 //   - Cell.prefab: EmptyColor white a=0.078, WallColor black a=0.196,
@@ -13,13 +17,33 @@
 //     PinSprite a thick ring, WaypointSprite a diamond, EdgeSprite a cross.
 //   - Cell.cs sizes (ScaleFactor 2): EmptySize 0.4, WallSize 2.0,
 //     PathSize 1.0 shrinking 0.05/step, PinSize 1.0. Path dots fade
-//     alpha 1 -> 0.4 (1 - index*0.1, floor 0.4).
+//     alpha 1 -> 0.4 (1 - index*0.1, floor 0.4) — the port ran them
+//     0.75 -> 0.3 for a while, but measured against the Unity
+//     screenshot that made the dots melt into the ribbon, so the whole
+//     path read as one thick band; Unity's 1 -> 0.4 is what makes the
+//     dots pop over the 0.3 ribbon. The pin ring is NOT 1.0 across:
+//     PinSprite is circle_thick, 500px at 800 PPU, so the sprite is
+//     only 0.625 units at PinSize 1.0 — the ring's outer diameter is
+//     0.62 units with a 0.124-unit stroke (measured from the texture
+//     and from the Unity screenshot: 42px ring vs 133px hex).
 //   - Character.cs / prefabs: the path ribbon (LineRenderer) is 1.1 world
-//     units wide with alpha 0.3, path dots are 1.0 across (so they fit
-//     INSIDE the ribbon), and characters sit at scale 1.5 — clearly bigger
-//     than any path dot, which is how you tell the piggy from its path.
+//     units wide, and its alpha GRADIENT is 1.0 at the character, 0.3
+//     after the first dot, fading to 0 at the far end (DrawLine) —
+//     measured: the ribbon is 0.55 of a hex wide in both builds, so
+//     the "thicker" read was the dot alpha, not the ribbon width.
+//     Path dots are 1.0 across (so they fit INSIDE the ribbon), and
+//     characters sit at scale 1.5 — clearly bigger than any path dot,
+//     which is how you tell the piggy from its path. The player IS
+//     full 1.5 in Unity (measured 105px piggy vs 133px hex = 0.79,
+//     i.e. 1.5/2 with a ribbon overlap).
 //     In canvas units (wall hex ~2.0 across = 2s): ribbon 1.1s wide,
 //     dots radius 0.5s shrinking, characters radius 0.75s.
+//   - diamond_white is 358x508 in a 512 texture at 512 PPU: the
+//     diamond itself is 0.70 wide, 0.99 tall at scale 1. The
+//     Collectable prefab is scale 1.5, so its diamond is 1.05 wide
+//     x 1.49 tall units — the port drew it 0.67 x 0.84, about 40%
+//     too small. The waypoint diamond (WaypointSize 0.6) is 0.42 x
+//     0.59 units. drawDiamond takes the Unity prefab scale now.
 //   - Character.cs SetPath / MenuController RevealPathLoop: path dots
 //     appear one by one with a distance-based delay — Player
 //     DrawPathDelay is 5 frames (~80ms) per dot, enemies 0.2 frames
@@ -34,8 +58,6 @@
 //     the cell), with a little pop — marks the previewed cell, while
 //     every empty cell gets a faint white hex outline (0.05-0.25 alpha).
 //     The port shows all of that while a wall preview is up, until GO.
-//     that reads as solid world objects next to the piggy, so the port
-//     runs 0.75 -> 0.3 — faded enough to read as "not in the world".
 //   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
 //     Red (0.961, 0.478, 0.506) = #F57A81, Green (0.265, 0.840, 0.629)
 //     = #44D6A0, Brown (0.753, 0.576, 0.361) = #C0935C.
@@ -47,7 +69,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=11';
+import { T } from './types.js?v=12';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -80,6 +102,14 @@ const CHAR_COLORS = {
   oldtimer: COLORS.oldtimer,
 };
 
+// '#rrggbb' + alpha -> 'rgba(r, g, b, a)', for the ribbon gradient.
+function hexA(hex, a) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -88,6 +118,7 @@ export class Renderer {
     this.originX = 0;
     this.originY = 0;
     this.centers = []; // [{row, col, x, y}] for hit-testing
+    this.rows = 0; // level height in rows (row 0 is the bottom, Unity-style)
     this.boardW = 0;
     this.boardH = 0;
     this.pathAnims = new Map(); // char id -> {sig, start} for the stagger
@@ -100,9 +131,11 @@ export class Renderer {
     const s = this.size;
     const w = game.width;
     const h = game.height;
+    this.rows = h;
     // Pointy-top odd-r (World.InitCell, Horizontal): x = 2*s*(col +
-    // 0.5*(row&1)), y = 1.5*s*row. Odd rows stick out half a step, so
-    // the content is one half-hex wider when there is more than one row.
+    // 0.5*(row&1)), y = 1.5*s*(h-1-row). The offset keys off the JSON
+    // row; the vertical position flips it, because Unity's world Y
+    // increases upward — JSON row 0 is the bottom of the screen.
     const boardW = 2 * s * (w - 1) + 2 * s + (h > 1 ? s : 0);
     const boardH = 1.5 * s * (h - 1) + 2 * s;
     const scale = Math.min(width / boardW, height / boardH, 1.4);
@@ -134,7 +167,9 @@ export class Renderer {
   }
 
   cellCenterY(row) {
-    return this.originY + 1.5 * this.size * row;
+    // Row 0 is the bottom (Unity world Y up), row h-1 the top.
+    const rows = this.rows || 1;
+    return this.originY + 1.5 * this.size * (rows - 1 - row);
   }
 
   cellAt(px, py) {
@@ -215,11 +250,14 @@ export class Renderer {
           ctx.fillStyle = COLORS.bedrock;
           ctx.fill();
         } else if (t === T.PIN) {
-          // PinSprite is a thick ring, white at 0.196.
+          // PinSprite is circle_thick, 500px at 800 PPU: the sprite is
+          // only 0.625 units across at PinSize 1.0, so the ring's outer
+          // diameter is 0.62 units with a 0.124-unit stroke — centreline
+          // radius (0.62-0.124)/2 = 0.248s, lineWidth 0.124s.
           ctx.beginPath();
-          ctx.arc(x, y, s * 0.5, 0, Math.PI * 2);
+          ctx.arc(x, y, s * 0.248, 0, Math.PI * 2);
           ctx.strokeStyle = COLORS.pin;
-          ctx.lineWidth = Math.max(2, s * 0.14);
+          ctx.lineWidth = Math.max(2, s * 0.124);
           ctx.stroke();
         } else if (t === T.EDGE) {
           // EdgeSprite is a cross, PastelRed at 0.6.
@@ -261,7 +299,7 @@ export class Renderer {
       const y = this.cellCenterY(r);
       const type = item.type;
       if (type === T.ENDPOINT) this.drawEndpoint(x, y, s);
-      else if (type === T.COLLECTABLE) this.drawDiamond(x, y, s, COLORS.collectable);
+      else if (type === T.COLLECTABLE) this.drawDiamond(x, y, 1.5, COLORS.collectable);
       else if (type === T.LURE) this.drawLure(x, y, s);
       else if (type === T.OLDTIMER) this.drawOldTimer(x, y, s);
     }
@@ -303,8 +341,24 @@ export class Renderer {
           ? Math.min(1, Math.max(0, (now - ribbonAt) / 300))
           : 1;
         if (ribbonP > 0) {
-          ctx.strokeStyle = color;
-          ctx.globalAlpha = 0.3 * ribbonP;
+          // Unity's DrawLine gradient: alpha 1.0 at the character,
+          // 0.3 after the first dot, holding 0.3 until the last dot,
+          // then fading to 0 at the far end. Approximated with a
+          // linear gradient along start -> end (Unity's is along the
+          // path length; same endpoints, same stops).
+          const last = path[path.length - 1];
+          const endX = this.cellCenterX(last.row, last.col);
+          const endY = this.cellCenterY(last.row);
+          const n = path.length;
+          const grad = ctx.createLinearGradient(startX, startY, endX, endY);
+          grad.addColorStop(0, hexA(color, 1));
+          if (n > 1) {
+            grad.addColorStop(1 / n, hexA(color, 0.3));
+            grad.addColorStop((n - 1) / n, hexA(color, 0.3));
+          }
+          grad.addColorStop(1, hexA(color, n > 1 ? 0 : 1));
+          ctx.strokeStyle = grad;
+          ctx.globalAlpha = ribbonP;
           ctx.lineWidth = s * 1.1;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
@@ -319,9 +373,10 @@ export class Renderer {
         path.forEach((step, i) => {
           const px = this.cellCenterX(step.row, step.col);
           const py = this.cellCenterY(step.row);
-          // Faded on purpose (see header): 0.75 -> 0.3, so path dots read
-          // as "not in the world" next to the solid character.
-          const targetAlpha = Math.max(0.3, 0.75 - i * 0.07);
+          // Unity's dot alpha (Cell.cs): 1 -> 0.4, 1 - index*0.1.
+          // The faded 0.75 -> 0.3 run made the dots melt into the
+          // ribbon, so the whole path read as one thick band.
+          const targetAlpha = Math.max(0.4, 1 - i * 0.1);
           const targetR = Math.max(0.2, 0.5 - i * 0.025);
           const p = stagger
             ? Math.min(1, Math.max(0, (now - anim.start - i * stepMs) / dotMs))
@@ -421,21 +476,26 @@ export class Renderer {
     // Safe zone: a white hex outline (the EndPoint prefab is hex-outline
     // segments) with the small green waypoint diamond inside it.
     const ctx = this.ctx;
-    this.drawDiamond(x, y, s * 0.7, COLORS.waypoint);
+    this.drawDiamond(x, y, 0.6, COLORS.waypoint);
     this.hexPath(x, y, s * 0.96);
     ctx.strokeStyle = COLORS.endpointOutline;
     ctx.lineWidth = 2.5;
     ctx.stroke();
   }
 
-  drawDiamond(x, y, s, fill = COLORS.collectable) {
+  drawDiamond(x, y, k, fill = COLORS.collectable) {
+    // k is the Unity prefab scale (Collectable 1.5, Waypoint 0.6).
+    // diamond_white is 358x508 in a 512 texture at 512 PPU: the
+    // diamond itself is 0.70 wide, 0.99 tall at scale 1, so at scale
+    // k its half-height is 0.495*k and its half-width 0.35*k units.
     const ctx = this.ctx;
-    const r = s * 0.42;
+    const hy = this.size * 0.495 * k;
+    const hx = this.size * 0.35 * k;
     ctx.beginPath();
-    ctx.moveTo(x, y - r);
-    ctx.lineTo(x + r * 0.8, y);
-    ctx.lineTo(x, y + r);
-    ctx.lineTo(x - r * 0.8, y);
+    ctx.moveTo(x, y - hy);
+    ctx.lineTo(x + hx, y);
+    ctx.lineTo(x, y + hy);
+    ctx.lineTo(x - hx, y);
     ctx.closePath();
     ctx.fillStyle = fill;
     ctx.fill();
