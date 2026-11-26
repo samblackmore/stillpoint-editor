@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=4';
-import { Renderer } from './render.js?v=4';
-import { parseLevel, loadLevelFile } from './levels.js?v=4';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=4';
+import { Game } from './engine.js?v=5';
+import { Renderer } from './render.js?v=5';
+import { parseLevel, loadLevelFile } from './levels.js?v=5';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=5';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -90,7 +90,7 @@ function startLevel(def, meta) {
 function layoutBoard() {
   const canvas = $('board');
   const wrap = canvas.parentElement;
-  const availW = Math.min(wrap.clientWidth - 24, 780);
+  const availW = Math.min(wrap.clientWidth, 780);
   const availH = Math.min(window.innerHeight - 260, 640);
   renderer = new Renderer(canvas);
   renderer.layout(game, Math.max(320, availW), Math.max(320, availH));
@@ -110,7 +110,17 @@ function updateHUD() {
   for (const o of objs) {
     const li = document.createElement('li');
     li.className = o.done ? 'done' : '';
-    li.textContent = (o.done ? '✓ ' : '○ ') + o.label;
+    // Unity's objectives panel: hollow circle / green check, label in
+    // white, numbers in yellow.
+    const mark = document.createElement('span');
+    mark.className = o.done ? 'obj-check' : '';
+    mark.textContent = o.done ? '✓ ' : '○ ';
+    li.appendChild(mark);
+    const label = document.createElement('span');
+    label.innerHTML = escapeHtml(o.label).replace(
+      /\d+/g, (n) => `<span class="obj-num">${n}</span>`,
+    );
+    li.appendChild(label);
     if (o.progress) {
       const span = document.createElement('span');
       span.className = 'prog';
@@ -120,6 +130,8 @@ function updateHUD() {
     list.appendChild(li);
   }
   $('undoBtn').disabled = game.history.length === 0;
+  // GO only does something while a wall preview is showing.
+  $('goBtn').disabled = !game.previewState;
   const banner = $('statusBanner');
   if (game.status === 'won') {
     banner.className = 'banner win';
@@ -210,13 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
   $('undoBtn').addEventListener('click', () => {
     if (game?.rewind()) updateHUD();
   });
+  $('goBtn').addEventListener('click', () => {
+    if (game?.commit()) updateHUD();
+  });
   $('stepBtn').addEventListener('click', () => {
     if (game?.stepForward()) updateHUD();
   });
   $('restartBtn').addEventListener('click', () => {
     if (game) startLevel(game.def, currentMeta);
   });
-  $('menuBtn').addEventListener('click', () => {
+  $('closeBtn').addEventListener('click', () => {
     history.pushState(null, '', location.pathname);
     startFromParams();
   });

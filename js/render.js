@@ -1,29 +1,49 @@
-// Canvas renderer: flat hexes, odd-r layout (odd rows shifted right),
-// matching the Unity board's row/column topology. Row 0 is the top.
-import { T } from './types.js?v=4';
+// Canvas renderer: flat circles on a level-colour background, matching the
+// Unity board. Row 0 is the top; flat-top odd-r layout, same topology as Unity.
+//
+// Every colour/size below is taken from the Unity repo, not invented:
+//   - Cell.prefab: EmptyColor white a=0.078, WallColor black a=0.196,
+//     BedrockColor black a=0.298, WaypointColor PastelGreen a=0.392,
+//     PinColor white a=0.196. EmptySprite is a circle, WallSprite a hex,
+//     PinSprite a thick ring, WaypointSprite a diamond, EdgeSprite a cross.
+//   - Cell.cs sizes (ScaleFactor 2): EmptySize 0.4, WallSize 2.0,
+//     PathSize 1.0 shrinking 0.05/step, PinSize 1.0. Path dots fade
+//     alpha 1 -> 0.4 (1 - index*0.1, floor 0.4).
+//   - Character.cs: the path ribbon is a line in the character's colour at
+//     alpha 0.3.
+//   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
+//     Red (0.961, 0.478, 0.506) = #F57A81, Green (0.265, 0.840, 0.629)
+//     = #44D6A0, Brown (0.753, 0.576, 0.361) = #C0935C.
+//   - Prefab SpriteRenderer colours: Player #FFC700, Enemy #F57A81,
+//     Digger #C0935C, PullEnemy #8053F6, OldTimer #A48000,
+//     Collectable #44D6A0 at alpha 0.588.
+//   - Background #4F6D82 is the level colour sampled from the Unity
+//     screenshot (Unity randomises it per level around the chapter colour;
+//     level JSONs carry no colour, so one blue for now).
+//   - EndPoint prefab is white hex-outline segments: the safe zone is a
+//     white hex outline, with the small green waypoint diamond inside it.
+import { T } from './types.js?v=5';
 
 const COLORS = {
-  bg: '#f6f1e7',
-  empty: '#fffdf6',
-  emptyBorder: '#e5ddc8',
-  wall: '#3d405b',
-  edge: '#2b2d42',
-  bedrock: '#1d3557',
-  obstacle: '#b7b7a4',
-  snow: '#dceef5',
-  pin: '#9b5de5',
-  endpoint: '#70a83b',
-  collectable: '#e9a319',
-  lure: '#e76f51',
-  player: '#e5989b',
-  playerDark: '#b35c6b',
-  enemy: '#6d6875',
-  bomb: '#22223b',
-  digger: '#8a6d4b',
-  pull: '#7b5ea7',
-  oldtimer: '#8d99ae',
-  ghost: 'rgba(61, 64, 91, 0.45)',
-  hint: '#e9a319',
+  bg: '#4f6d82',
+  wall: 'rgba(0, 0, 0, 0.196)',
+  bedrock: 'rgba(0, 0, 0, 0.298)',
+  emptyDot: 'rgba(255, 255, 255, 0.078)',
+  pin: 'rgba(255, 255, 255, 0.196)',
+  edge: 'rgba(245, 122, 129, 0.6)', // PastelRed
+  snow: 'rgba(255, 255, 255, 0.2)',
+  obstacle: 'rgba(0, 0, 0, 0.35)',
+  waypoint: 'rgba(68, 214, 160, 0.392)', // PastelGreen, WaypointColor
+  endpointOutline: 'rgba(255, 255, 255, 0.85)',
+  collectable: 'rgba(68, 214, 160, 0.588)', // PastelGreen, Collectable prefab
+  lure: '#f57a81',
+  player: '#ffc700',
+  enemy: '#f57a81',
+  bomb: '#f57a81',
+  digger: '#c0935c',
+  pull: '#8053f6',
+  oldtimer: '#a48000',
+  hint: '#ffc700',
 };
 
 const CHAR_COLORS = {
@@ -43,6 +63,8 @@ export class Renderer {
     this.originX = 0;
     this.originY = 0;
     this.centers = []; // [{row, col, x, y}] for hit-testing
+    this.boardW = 0;
+    this.boardH = 0;
   }
 
   layout(game, width, height) {
@@ -57,6 +79,8 @@ export class Renderer {
     const ss = this.size;
     this.originX = (width - Math.sqrt(3) * ss * (w + 0.5)) / 2 + ss * 0.2;
     this.originY = (height - (1.5 * ss * (h - 1) + 2 * ss)) / 2 + ss;
+    this.boardW = width;
+    this.boardH = height;
     this.canvas.width = width * window.devicePixelRatio;
     this.canvas.height = height * window.devicePixelRatio;
     this.canvas.style.width = `${width}px`;
@@ -104,42 +128,64 @@ export class Renderer {
     ctx.closePath();
   }
 
+  circle(x, y, r, fill) {
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
   draw(game, { showPaths = true } = {}) {
     const ctx = this.ctx;
     const s = this.size;
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.clearRect(0, 0, this.boardW, this.boardH);
+    // Level-colour background, full bleed across the board.
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, this.boardW, this.boardH);
 
-    // Terrain.
+    // Terrain: in Unity a cell is a dot, a hex, a ring or a cross — never a
+    // hex outline. Sizes are EmptySize/WallSize ratios from Cell.cs
+    // (empty 0.4 vs wall 2.0, so the dot is 1/5 of a wall hex).
     for (let r = 0; r < game.height; r++) {
       for (let c = 0; c < game.width; c++) {
         const x = this.cellCenterX(r, c);
         const y = this.cellCenterY(r);
         const t = game.terrain[r][c];
-        let fill = COLORS.empty;
-        let border = COLORS.emptyBorder;
-        if (t === T.WALL) { fill = COLORS.wall; border = COLORS.wall; }
-        else if (t === T.EDGE) { fill = COLORS.edge; border = COLORS.edge; }
-        else if (t === T.BEDROCK) { fill = COLORS.bedrock; border = COLORS.bedrock; }
-        else if (t === T.OBSTACLE) { fill = COLORS.obstacle; border = COLORS.obstacle; }
-        else if (t === T.SNOW) { fill = COLORS.snow; border = COLORS.emptyBorder; }
-        else if (t === T.PIN) { fill = COLORS.empty; border = COLORS.pin; }
-        this.hexPath(x, y, s * 0.96);
-        ctx.fillStyle = fill;
-        ctx.fill();
-        ctx.strokeStyle = border;
-        ctx.lineWidth = t === T.PIN ? 2.5 : 1;
-        ctx.stroke();
-        if (t === T.PIN) {
-          ctx.beginPath();
-          ctx.arc(x, y, s * 0.22, 0, Math.PI * 2);
-          ctx.fillStyle = COLORS.pin;
+        if (t === T.WALL) {
+          this.hexPath(x, y, s * 0.96);
+          ctx.fillStyle = COLORS.wall;
           ctx.fill();
-        }
-        if (t === T.EDGE) {
-          ctx.beginPath();
-          ctx.arc(x, y, s * 0.16, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        } else if (t === T.BEDROCK) {
+          this.hexPath(x, y, s * 0.96);
+          ctx.fillStyle = COLORS.bedrock;
           ctx.fill();
+        } else if (t === T.PIN) {
+          // PinSprite is a thick ring, white at 0.196.
+          ctx.beginPath();
+          ctx.arc(x, y, s * 0.5, 0, Math.PI * 2);
+          ctx.strokeStyle = COLORS.pin;
+          ctx.lineWidth = Math.max(2, s * 0.14);
+          ctx.stroke();
+        } else if (t === T.EDGE) {
+          // EdgeSprite is a cross, PastelRed at 0.6.
+          ctx.strokeStyle = COLORS.edge;
+          ctx.lineWidth = Math.max(2, s * 0.12);
+          ctx.lineCap = 'round';
+          const a = s * 0.32;
+          ctx.beginPath();
+          ctx.moveTo(x - a, y - a);
+          ctx.lineTo(x + a, y + a);
+          ctx.moveTo(x + a, y - a);
+          ctx.lineTo(x - a, y + a);
+          ctx.stroke();
+          this.circle(x, y, s * 0.2, COLORS.emptyDot);
+        } else if (t === T.SNOW) {
+          this.circle(x, y, s * 0.3, COLORS.snow);
+        } else if (t === T.OBSTACLE) {
+          this.circle(x, y, s * 0.45, COLORS.obstacle);
+        } else {
+          this.circle(x, y, s * 0.2, COLORS.emptyDot);
         }
       }
     }
@@ -151,43 +197,77 @@ export class Renderer {
       const y = this.cellCenterY(r);
       const type = item.type;
       if (type === T.ENDPOINT) this.drawEndpoint(x, y, s);
-      else if (type === T.COLLECTABLE) this.drawDiamond(x, y, s);
+      else if (type === T.COLLECTABLE) this.drawDiamond(x, y, s, COLORS.collectable);
       else if (type === T.LURE) this.drawLure(x, y, s);
       else if (type === T.OLDTIMER) this.drawOldTimer(x, y, s);
     }
 
-    // Paths (under the characters).
+    // Paths (under the characters). Unity draws a ribbon in the
+    // character's colour at alpha 0.3 (Character.cs) plus a chain of
+    // circles that shrink 0.05/step and fade 1 -> 0.4 (Cell.cs).
+    // The final step is a hollow ring, as in the Unity screenshot.
     if (showPaths) {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
         const path = this.pathFor(game, ch);
         if (!path || path.length === 0) continue;
         const color = CHAR_COLORS[ch.kind] || '#888';
+        const startX = this.cellCenterX(ch.row, ch.col);
+        const startY = this.cellCenterY(ch.row);
         ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([2, 7]);
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = s * 0.5;
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(this.cellCenterX(ch.row, ch.col), this.cellCenterY(ch.row));
+        ctx.moveTo(startX, startY);
         for (const step of path) {
           ctx.lineTo(this.cellCenterX(step.row, step.col), this.cellCenterY(step.row));
         }
         ctx.stroke();
-        ctx.setLineDash([]);
-        const last = path[path.length - 1];
-        ctx.beginPath();
-        ctx.arc(this.cellCenterX(last.row, last.col), this.cellCenterY(last.row), 4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = 1;
+        path.forEach((step, i) => {
+          const px = this.cellCenterX(step.row, step.col);
+          const py = this.cellCenterY(step.row);
+          const alpha = Math.max(0.4, 1 - i * 0.1);
+          const radius = s * Math.max(0.2, 0.5 - i * 0.025);
+          ctx.globalAlpha = alpha;
+          if (i === path.length - 1) {
+            ctx.beginPath();
+            ctx.arc(px, py, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else {
+            this.circle(px, py, radius, color);
+          }
+        });
+        ctx.globalAlpha = 1;
       }
     }
 
     // Preview ghost wall.
-    if (game.previewState && game.previewState.action === 'build') {
-      const { row, col } = game.previewState;
-      this.hexPath(this.cellCenterX(row, col), this.cellCenterY(row), s * 0.96);
-      ctx.fillStyle = COLORS.ghost;
-      ctx.fill();
+    if (game.previewState) {
+      const { row, col, action } = game.previewState;
+      const x = this.cellCenterX(row, col);
+      const y = this.cellCenterY(row);
+      this.hexPath(x, y, s * 0.96);
+      if (action === 'build') {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else {
+        // Previewing a removal: fade the wall out, dashed white outline.
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+        ctx.fill();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
 
     // Hints.
@@ -206,7 +286,8 @@ export class Renderer {
       ctx.stroke();
     }
 
-    // Characters.
+    // Characters: plain solid circles in their prefab colours. No faces —
+    // Unity characters are just circles.
     for (const ch of game.chars) {
       if (!ch.alive) continue;
       const x = this.cellCenterX(ch.row, ch.col);
@@ -221,33 +302,17 @@ export class Renderer {
   }
 
   drawEndpoint(x, y, s) {
+    // Safe zone: a white hex outline (the EndPoint prefab is hex-outline
+    // segments) with the small green waypoint diamond inside it.
     const ctx = this.ctx;
-    ctx.beginPath();
-    ctx.arc(x, y, s * 0.42, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.endpoint;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x, y, s * 0.42, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    // Flag.
-    ctx.strokeStyle = '#fff';
+    this.drawDiamond(x, y, s * 0.7, COLORS.waypoint);
+    this.hexPath(x, y, s * 0.96);
+    ctx.strokeStyle = COLORS.endpointOutline;
     ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(x, y + s * 0.28);
-    ctx.lineTo(x, y - s * 0.3);
     ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(x, y - s * 0.3);
-    ctx.lineTo(x + s * 0.34, y - s * 0.14);
-    ctx.lineTo(x, y - s * 0.02);
-    ctx.closePath();
-    ctx.fill();
   }
 
-  drawDiamond(x, y, s) {
+  drawDiamond(x, y, s, fill = COLORS.collectable) {
     const ctx = this.ctx;
     const r = s * 0.42;
     ctx.beginPath();
@@ -256,33 +321,23 @@ export class Renderer {
     ctx.lineTo(x, y + r);
     ctx.lineTo(x - r * 0.8, y);
     ctx.closePath();
-    ctx.fillStyle = COLORS.collectable;
+    ctx.fillStyle = fill;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
   }
 
   drawLure(x, y, s) {
     const ctx = this.ctx;
-    ctx.beginPath();
-    ctx.arc(x, y, s * 0.34, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.lure;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x, y, s * 0.16, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fill();
+    this.circle(x, y, s * 0.34, COLORS.lure);
+    this.circle(x, y, s * 0.16, 'rgba(255,255,255,0.85)');
   }
 
   drawOldTimer(x, y, s) {
     const ctx = this.ctx;
-    ctx.beginPath();
-    ctx.arc(x, y, s * 0.4, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.oldtimer;
-    ctx.fill();
+    this.circle(x, y, s * 0.4, COLORS.oldtimer);
     ctx.strokeStyle = 'rgba(255,255,255,0.8)';
     ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, s * 0.4, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fillStyle = '#fff';
     ctx.font = `bold ${Math.round(s * 0.42)}px sans-serif`;
@@ -294,57 +349,27 @@ export class Renderer {
   drawCharacter(ch, x, y, s) {
     const ctx = this.ctx;
     const color = CHAR_COLORS[ch.kind] || '#888';
-    const r = s * (ch.kind === 'player' ? 0.52 : 0.46);
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    const r = s * (ch.kind === 'player' ? 0.55 : 0.5);
+    this.circle(x, y, r, color);
+    if (ch.kind === 'bomb') {
+      // Same red as an enemy in Unity; the white ring tells it apart.
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.62, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
     if (ch.sleeping) {
       ctx.fillStyle = '#fff';
       ctx.font = `bold ${Math.round(s * 0.5)}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('z', x + r * 0.6, y - r * 0.6);
-    }
-    if (ch.kind === 'player') {
-      // Piggy face: two eyes.
-      ctx.fillStyle = COLORS.playerDark;
-      ctx.beginPath();
-      ctx.arc(x - r * 0.32, y - r * 0.12, r * 0.13, 0, Math.PI * 2);
-      ctx.arc(x + r * 0.32, y - r * 0.12, r * 0.13, 0, Math.PI * 2);
-      ctx.fill();
-      // Snout.
-      ctx.beginPath();
-      ctx.ellipse(x, y + r * 0.22, r * 0.3, r * 0.2, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fill();
-    } else if (ch.kind === 'bomb') {
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold ${Math.round(s * 0.5)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('!', x, y + 1);
-    } else if (ch.kind === 'enemy') {
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(x - r * 0.3, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
-      ctx.arc(x + r * 0.3, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (ch.kind === 'digger') {
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x - r * 0.4, y + r * 0.35);
-      ctx.lineTo(x + r * 0.4, y + r * 0.35);
-      ctx.stroke();
+      ctx.fillText('z', x + r * 0.65, y - r * 0.65);
     }
     if (ch.finished) {
       ctx.beginPath();
       ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-      ctx.strokeStyle = COLORS.endpoint;
+      ctx.strokeStyle = '#44d6a0';
       ctx.lineWidth = 2.5;
       ctx.stroke();
     }

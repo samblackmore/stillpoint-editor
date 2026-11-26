@@ -76,6 +76,15 @@ forward plays turns with no wall until the level ends.
 - **Wall removal**: tapping a placed wall previews removing it, which the
   Unity game doesn't offer (there, a placed wall can only be undone with
   rewind). Kept here because it's handy for prototyping.
+- **Board visuals match Unity**: level-colour blue background (#4f6d82),
+  empty cells as faint white dots, walls as dark translucent hexes, pins as
+  faint white rings, edge cells as red crosses, paths as a ribbon plus
+  shrinking/fading circles in the character's colour, characters as plain
+  solid circles in their prefab colours (player #ffc700, enemy #f57a81),
+  diamonds in PastelGreen, safe zone as a white hex outline with a green
+  diamond inside — all taken from Cell.prefab / Cell.cs / the prefabs.
+  HUD is Unity-style too: objectives panel top-left, round undo/close
+  buttons top-right, big GO button bottom-right to commit a previewed wall.
 - **No tutorial speech, camera, or menus** — flat shapes, as intended.
 - **Obstacle** is passable slow terrain here; in Unity it's an item a
   character can pick up.

@@ -1,4 +1,6 @@
-/* Stillpoint HTML port — shared styles. Cozy, flat, cream + slate. */
+/* Stillpoint HTML port — shared styles. Cozy, flat, cream + slate.
+   The play board itself matches Unity: level-colour blue (#4f6d82),
+   dark translucent HUD panels, round buttons, big GO button. */
 :root {
   --bg: #f6f1e7;
   --card: #fffdf6;
@@ -9,6 +11,10 @@
   --accent-dark: #b35c6b;
   --good: #70a83b;
   --bad: #c44536;
+  --board-bg: #4f6d82;
+  --board-dark: #3f5666;
+  --board-yellow: #ffc700;
+  --board-green: #44d6a0;
 }
 
 * { box-sizing: border-box; }
@@ -151,10 +157,11 @@ input[type="text"], input[type="number"], select {
 .play-head .turn { color: var(--muted); font-size: 14px; }
 
 .board-wrap {
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--board-bg);
   border-radius: 16px;
-  padding: 12px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: center;
 }
@@ -167,13 +174,95 @@ canvas#board {
   cursor: pointer;
 }
 
+/* Unity-style HUD overlaid on the board: objectives panel top-left,
+   round undo/close buttons top-right, big GO button bottom-right. */
+.hud-objectives {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(63, 86, 102, 0.88);
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+  color: #fff;
+  max-width: 68%;
+  pointer-events: none;
+}
+
+.hud-objectives h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hud-objectives .objectives li {
+  color: #fff;
+  font-size: 14px;
+  padding: 2px 0;
+}
+
+.hud-objectives .objectives li.done { color: rgba(255, 255, 255, 0.65); }
+.hud-objectives .objectives li .obj-num { color: var(--board-yellow); font-weight: 700; }
+.hud-objectives .objectives li .obj-check { color: var(--board-green); font-weight: 700; }
+.hud-objectives .objectives li .prog { color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-left: 6px; }
+
+.hud-turn {
+  margin-top: 5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.hud-buttons {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.round-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(63, 86, 102, 0.92);
+  color: #a8bfd0;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.round-btn:hover { color: #fff; }
+.round-btn:disabled { opacity: 0.4; cursor: default; }
+
+.go-btn {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(63, 86, 102, 0.94);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  padding: 0;
+}
+
+.go-btn:hover { background: var(--board-dark); }
+.go-btn:disabled { opacity: 0.45; cursor: default; }
+
 .objectives { list-style: none; margin: 0; padding: 0; }
 .objectives li {
   padding: 4px 0;
   font-size: 14px;
 }
-.objectives li.done { color: var(--good); text-decoration: line-through; }
-.objectives li .prog { color: var(--muted); font-size: 12px; margin-left: 6px; }
 
 .banner {
   border-radius: 12px;

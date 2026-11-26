@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 <header class="top">
@@ -43,20 +43,25 @@
   <section id="playView">
     <div class="play-head">
       <h2 id="levelName">Level</h2>
-      <span class="turn" id="turnLabel">Turn 0</span>
+    </div>
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div class="hud-objectives" id="hudObjectives">
+        <h3>Objectives</h3>
+        <ul class="objectives" id="objectives"></ul>
+        <div class="hud-turn" id="turnLabel">Turn 0</div>
+      </div>
+      <div class="hud-buttons">
+        <button class="round-btn" id="undoBtn" title="Undo turn" aria-label="Undo turn">↩</button>
+        <button class="round-btn" id="closeBtn" title="Back to levels" aria-label="Back to levels">✕</button>
+      </div>
+      <button class="go-btn" id="goBtn" title="Place the previewed wall">GO</button>
     </div>
     <div class="banner" id="statusBanner"></div>
-    <div class="board-wrap"><canvas id="board"></canvas></div>
-    <p class="hint-text">Tap a cell to preview a wall there — the piggy and enemies show where they'd go. Tap the same cell again to place it. Tap a wall to preview removing it.</p>
+    <p class="hint-text">Tap a cell to preview a wall there — the piggy and enemies show where they'd go. Tap GO, or tap the same cell again, to place it. Tap a wall to preview removing it.</p>
     <div class="btn-row">
-      <button class="btn" id="undoBtn">↩ Undo turn</button>
       <button class="btn" id="stepBtn">▶ Step forward</button>
       <button class="btn" id="restartBtn">↻ Restart</button>
-      <button class="btn" id="menuBtn">☰ Levels</button>
-    </div>
-    <div class="card" style="margin-top: 16px;">
-      <h2>Objectives</h2>
-      <ul class="objectives" id="objectives"></ul>
     </div>
   </section>
 </main>
@@ -67,6 +72,6 @@
   abilities, flood and fog are not ported yet — see README.
 </footer>
 
-<script type="module" src="js/app.js?v=4"></script>
+<script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>
