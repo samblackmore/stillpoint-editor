@@ -42,12 +42,16 @@
 //     all three are the SAME rendering — a hexagon the full size of a
 //     wall (prefab root scale 2, so 2.0 units across) divided into six
 //     segments (hex_outline_segment_1..6.png), each a solid wedge of
-//     the ring: outer hex radius s, inner hex Rv 0.25s / Rh 0.5s, so
-//     the ring is a thick border with a hexagonal hole, not a hairline.
-//     Each segment carries its own Flash component, so it shimmers on
-//     its own interval — seg1 1.0s, seg2 1.2s, seg3 0.8s, seg4 1.4s,
-//     seg5 0.6s, seg6 1.6s — alpha ping-ponging 0.392 <-> 0.8 (lure
-//     0.784) from a shared start, drifting out of phase. The ONLY
+//     the ring: outer hex radius s, inner hex a uniform 0.5x copy of
+//     the outer hex (measured row-by-row from the segment sprites:
+//     the hole's vertices sit 128px from the sprite centre on every
+//     axis, i.e. 0.25 units at 512 PPU, 0.5 units at the prefab's x2
+//     scale). The port first drew the inner hex squashed (Rv 0.25s /
+//     Rh 0.5s) and the hole read as a rectangle — Sam caught it from a
+//     close-up. Each segment carries its own Flash component, so it
+//     shimmers on its own interval — seg1 1.0s, seg2 1.2s, seg3 0.8s,
+//     seg4 1.4s, seg5 0.6s, seg6 1.6s — alpha ping-ponging 0.392 <-> 0.8
+//     (lure 0.784) from a shared start, drifting out of phase. The ONLY
 //     difference between the three is the base colour: waypoint
 //     (1, 0.745, 0) = #ffbe00, endpoint (0.265, 0.840, 0.629) =
 //     #44d6a0, lure (0.961, 0.478, 0.506) = #f57a81. No sprite copy
@@ -112,7 +116,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=16';
+import { T } from './types.js?v=17';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -270,8 +274,8 @@ export class Renderer {
   // The six vertices of that hex, in the same order (top, upper-right,
   // lower-right, bottom, lower-left, upper-left), for a hex with
   // vertical radius rv and horizontal radius rh. The waypoint hex ring
-  // uses the same shape twice: outer (s, s) and inner (0.25s, 0.5s),
-  // measured from the segment sprites.
+  // uses the same shape twice: outer (s, s) and inner (0.5s, 0.5s) —
+  // the hole is a uniform half-scale copy of the outer hex.
   hexVerts(x, y, rv, rh) {
     return [
       [x, y - rv],
@@ -612,8 +616,8 @@ export class Renderer {
     // Waypoint / endpoint / lure: one thick shimmering hex ring, the
     // full size of a wall (prefab root scale 2), split into six
     // segments (hex_outline_segment_1..6.png). Each segment is a wedge
-    // of the ring — outer hex radius s, inner hex Rv 0.25s / Rh 0.5s —
-    // with its own Flash interval, alpha ping-ponging 0.392 <-> flashMax
+    // of the ring — outer hex radius s, inner hex a uniform 0.5x copy
+    // — with its own Flash interval, alpha ping-ponging 0.392 <-> flashMax
     // from a shared start so the segments drift out of phase. Drawn
     // straight from canvas paths; no sprite copy is needed. Inside sits
     // the small green waypoint diamond (WaypointSize 0.6); when a path
@@ -621,7 +625,7 @@ export class Renderer {
     // ring keeps its base colour.
     const ctx = this.ctx;
     const outer = this.hexVerts(x, y, s, s);
-    const inner = this.hexVerts(x, y, s * 0.25, s * 0.5);
+    const inner = this.hexVerts(x, y, s * 0.5, s * 0.5);
     const t = Date.now();
     for (let i = 0; i < 6; i++) {
       const j = (i + 1) % 6;
