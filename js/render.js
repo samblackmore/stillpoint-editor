@@ -47,7 +47,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=10';
+import { T } from './types.js?v=11';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -203,12 +203,15 @@ export class Renderer {
         const x = this.cellCenterX(r, c);
         const y = this.cellCenterY(r);
         const t = game.terrain[r][c];
+        // Walls are drawn at full radius s: Unity's hex_white is 512px
+        // at 512 PPU, so at WallSize 2.0 it spans exactly the 2-unit
+        // cell spacing — neighbouring walls share an edge, no gap.
         if (t === T.WALL) {
-          this.hexPath(x, y, s * 0.96);
+          this.hexPath(x, y, s);
           ctx.fillStyle = COLORS.wall;
           ctx.fill();
         } else if (t === T.BEDROCK) {
-          this.hexPath(x, y, s * 0.96);
+          this.hexPath(x, y, s);
           ctx.fillStyle = COLORS.bedrock;
           ctx.fill();
         } else if (t === T.PIN) {
@@ -240,8 +243,10 @@ export class Renderer {
         }
         // While previewing, Unity's drag overlay puts a faint white hex
         // outline on every empty cell (ShowHexOverlay, 0.05-0.25 alpha).
+        // The overlay is scale 1.9 against the 2.0 wall, so it sits
+        // inset at 0.95s — its hairline gap is deliberate, not a bug.
         if (previewing && t === T.EMPTY && !game.items.has(`${r},${c}`)) {
-          this.hexPath(x, y, s * 0.96);
+          this.hexPath(x, y, s * 0.95);
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -355,14 +360,15 @@ export class Renderer {
       const pe = 1 - Math.pow(1 - pop, 3);
       if (action === 'build') {
         // White flash: triangle wave, 0.4s full cycle, alpha 1.0 <-> 0.6.
+        // Full radius s, like a real wall — it shares its neighbours' edges.
         const phase = ((now - this.previewAnim.start) % 400) / 400;
         const tri = phase < 0.5 ? phase * 2 : 2 - phase * 2;
-        this.hexPath(x, y, s * 0.96);
+        this.hexPath(x, y, s);
         ctx.fillStyle = `rgba(255, 255, 255, ${(1 - 0.4 * tri).toFixed(3)})`;
         ctx.fill();
       } else {
         // Previewing a removal: fade the wall out, dashed white outline.
-        this.hexPath(x, y, s * 0.96);
+        this.hexPath(x, y, s);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
         ctx.fill();
         ctx.setLineDash([5, 4]);
