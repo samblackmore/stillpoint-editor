@@ -23,7 +23,7 @@ export function parseLevel(raw) {
 }
 
 function normalizeObjectives(o) {
-  return {
+  const normalized = {
     ReachEdge: !!o.ReachEdge,
     ReachOldTimer: !!o.ReachOldTimer,
     SurvivalTurnCount: o.SurvivalTurnCount || 0,
@@ -38,6 +38,21 @@ function normalizeObjectives(o) {
     CollectOrder: o.CollectOrder || [],
     CollectOrderIsOwner: !!o.CollectOrderIsOwner,
   };
+  // Unity's tutorial controller adds an edge objective to levels whose JSON
+  // carries none (the tutorial levels: tut_0_0, tut_edge_*, tut_end_*,
+  // level2). Without it the game is won vacuously after one turn, because
+  // "all objectives complete" is true of an empty list — in Unity and here
+  // (LINQ All / Array.every on []). Default those levels to pin-every-piggy.
+  const hasAny =
+    normalized.ReachEdge ||
+    normalized.ReachOldTimer ||
+    normalized.SurvivalTurnCount > 0 ||
+    normalized.SurvivalTurnCountBonus > 0 ||
+    normalized.BuildWallsNoMoreThan > 0 ||
+    normalized.CollectItemObjectives.some((c) => c.CollectAtLeast > 0) ||
+    normalized.CollectOrder.length > 0;
+  if (!hasAny) normalized.ReachEdge = true;
+  return normalized;
 }
 
 export async function loadLevelFile(path) {

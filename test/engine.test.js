@@ -175,6 +175,18 @@ function solve(game, { maxDepth = 10, maxNodes = 300000 } = {}) {
   return dfs(0);
 }
 
+test('levels with no objectives default to pin-every-piggy', () => {
+  // Unity's tutorial controller adds an edge objective to levels whose JSON
+  // carries none; without the default, "all objectives complete" is true
+  // of an empty list and the level is won after a single turn.
+  const def = parseLevel({ grid: ['18 0', '0 3'], objectives: {} });
+  assert.equal(def.objectives.ReachEdge, true);
+  const game = new Game().loadLevel(def);
+  game.preview(0, 1);
+  game.commit();
+  assert.equal(game.status, 'playing');
+});
+
 test('tutorial: first steps is won by walking to the pin', () => {
   const game = new Game().loadLevel(loadStoreLevel('tut_0_0.json'));
   // Step-forward is disabled in this tutorial level, so every turn places
