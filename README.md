@@ -24,7 +24,7 @@ Play it: GitHub Pages serves `index.html` from `main`.
   - `generator.js` — the random level generator, ported from
     `LevelFactory.TryGenerate`. One deliberate change: it runs on a
     seeded RNG, so a level is reproducible from its seed.
-  - `render.js` — canvas hex renderer (flat-top hexes, odd-r layout).
+  - `render.js` — canvas hex renderer (pointy-top hexes, odd-r layout).
   - `levels.js` — level JSON parsing (including the wrapped LevelMeta
     shape some files use).
 - `levels/store/` — all 231 hand-made and AI level JSONs copied from the

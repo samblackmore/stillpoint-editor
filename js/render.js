@@ -1,5 +1,10 @@
 // Canvas renderer: flat circles on a level-colour background, matching the
-// Unity board. Row 0 is the top; flat-top odd-r layout, same topology as Unity.
+// Unity board. Row 0 is the top; pointy-top odd-r layout, same as Unity
+// (World.InitCell, LevelOrientation.Horizontal): rows share a y, odd
+// rows are offset half a step, columns zig-zag. The hex itself is
+// Unity's hex_white sprite — a pointy-top hexagon stretched so its
+// width equals its height (top/bottom vertices, vertical side edges) —
+// which is exactly what tessellates at x-step 2s, y-step 1.5s.
 //
 // Every colour/size below is taken from the Unity repo, not invented:
 //   - Cell.prefab: EmptyColor white a=0.078, WallColor black a=0.196,
@@ -42,7 +47,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=9';
+import { T } from './types.js?v=10';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -95,14 +100,20 @@ export class Renderer {
     const s = this.size;
     const w = game.width;
     const h = game.height;
-    // Flat-top odd-r: x = sqrt(3)*s*(col + 0.5*(row&1)), y = 1.5*s*row.
-    const boardW = Math.sqrt(3) * s * (w + 0.5) + s * 0.5;
+    // Pointy-top odd-r (World.InitCell, Horizontal): x = 2*s*(col +
+    // 0.5*(row&1)), y = 1.5*s*row. Odd rows stick out half a step, so
+    // the content is one half-hex wider when there is more than one row.
+    const boardW = 2 * s * (w - 1) + 2 * s + (h > 1 ? s : 0);
     const boardH = 1.5 * s * (h - 1) + 2 * s;
     const scale = Math.min(width / boardW, height / boardH, 1.4);
     this.size = s * scale;
     const ss = this.size;
-    this.originX = (width - Math.sqrt(3) * ss * (w + 0.5)) / 2 + ss * 0.2;
-    this.originY = (height - (1.5 * ss * (h - 1) + 2 * ss)) / 2 + ss;
+    // originX/originY are the first cell's centre: content is centred,
+    // with a half-hex margin on each side.
+    const contentW = 2 * ss * (w - 1) + 2 * ss + (h > 1 ? ss : 0);
+    const contentH = 1.5 * ss * (h - 1) + 2 * ss;
+    this.originX = (width - contentW) / 2 + ss;
+    this.originY = (height - contentH) / 2 + ss;
     this.boardW = width;
     this.boardH = height;
     this.canvas.width = width * window.devicePixelRatio;
@@ -119,7 +130,7 @@ export class Renderer {
   }
 
   cellCenterX(row, col) {
-    return this.originX + Math.sqrt(3) * this.size * (col + 0.5 * (row & 1));
+    return this.originX + 2 * this.size * (col + 0.5 * (row & 1));
   }
 
   cellCenterY(row) {
@@ -140,15 +151,18 @@ export class Renderer {
   }
 
   hexPath(x, y, r) {
+    // Unity's hex_white sprite: pointy-top, stretched so width == height
+    // — top/bottom vertices, vertical side edges at x = +/-r from
+    // y = -0.5r to 0.5r. That shape tessellates exactly at the 2s / 1.5s
+    // spacing above; a flat-top hex (vertices at 0, 60, ...) does not.
     const ctx = this.ctx;
     ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = (Math.PI / 180) * (60 * i);
-      const px = x + r * Math.cos(a);
-      const py = y + r * Math.sin(a);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + r, y - 0.5 * r);
+    ctx.lineTo(x + r, y + 0.5 * r);
+    ctx.lineTo(x, y + r);
+    ctx.lineTo(x - r, y + 0.5 * r);
+    ctx.lineTo(x - r, y - 0.5 * r);
     ctx.closePath();
   }
 
