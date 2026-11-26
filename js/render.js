@@ -1,6 +1,6 @@
 // Canvas renderer: flat hexes, odd-r layout (odd rows shifted right),
 // matching the Unity board's row/column topology. Row 0 is the top.
-import { T } from './types.js';
+import { T } from './types.js?v=4';
 
 const COLORS = {
   bg: '#f6f1e7',
