@@ -83,6 +83,13 @@ forward plays turns with no wall until the level ends.
   solid circles in their prefab colours (player #ffc700, enemy #f57a81),
   diamonds in PastelGreen, safe zone as a white hex outline with a green
   diamond inside — all taken from Cell.prefab / Cell.cs / the prefabs.
+  Paths are drawn to the same proportions: the ribbon is 1.1 wide with
+  the 1.0 dots fitting inside it, characters are 1.5 across so the piggy
+  is unmistakable, dots run faded (0.75 -> 0.3) so they read as "not in
+  the world", and they stagger in one by one (80ms per dot for the
+  player, instant for enemies) with the ribbon fading in over 0.3s
+  after — the RevealPathLoop choreography from Unity, replayed on every
+  path recompute.
   HUD is Unity-style too: objectives panel top-left, round undo/close
   buttons top-right, big GO button bottom-right to commit a previewed wall.
 - **No tutorial speech, camera, or menus** — flat shapes, as intended.

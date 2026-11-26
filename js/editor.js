@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=6';
-import { Game } from './engine.js?v=6';
-import { Renderer } from './render.js?v=6';
-import { parseLevel, serializeLevel } from './levels.js?v=6';
+import { T } from './types.js?v=7';
+import { Game } from './engine.js?v=7';
+import { Renderer } from './render.js?v=7';
+import { parseLevel, serializeLevel } from './levels.js?v=7';
 
 const $ = (id) => document.getElementById(id);
 
@@ -69,7 +69,7 @@ function render() {
   renderer = new Renderer(canvas);
   const wrap = canvas.parentElement;
   renderer.layout(game, Math.min(wrap.clientWidth - 24, 780), Math.min(window.innerHeight - 300, 600));
-  renderer.draw(game, { showPaths: true });
+  renderer.draw(game, { showPaths: true, stagger: false });
   $('jsonOut').value = JSON.stringify(serializeLevel(parseLevel(def)), null, 1);
 }
 
@@ -84,7 +84,7 @@ function paintAt(ev) {
   def.grid[cell.row][cell.col] = tool;
   // Rebuild the game from the edited grid.
   game = new Game().loadLevel(parseLevel(def));
-  renderer.draw(game, { showPaths: true });
+  renderer.draw(game, { showPaths: true, stagger: false });
   $('jsonOut').value = JSON.stringify(serializeLevel(parseLevel(def)), null, 1);
 }
 

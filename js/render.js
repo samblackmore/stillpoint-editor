@@ -9,8 +9,21 @@
 //   - Cell.cs sizes (ScaleFactor 2): EmptySize 0.4, WallSize 2.0,
 //     PathSize 1.0 shrinking 0.05/step, PinSize 1.0. Path dots fade
 //     alpha 1 -> 0.4 (1 - index*0.1, floor 0.4).
-//   - Character.cs: the path ribbon is a line in the character's colour at
-//     alpha 0.3.
+//   - Character.cs / prefabs: the path ribbon (LineRenderer) is 1.1 world
+//     units wide with alpha 0.3, path dots are 1.0 across (so they fit
+//     INSIDE the ribbon), and characters sit at scale 1.5 — clearly bigger
+//     than any path dot, which is how you tell the piggy from its path.
+//     In canvas units (wall hex ~2.0 across = 2s): ribbon 1.1s wide,
+//     dots radius 0.5s shrinking, characters radius 0.75s.
+//   - Character.cs SetPath / MenuController RevealPathLoop: path dots
+//     appear one by one with a distance-based delay — Player
+//     DrawPathDelay is 5 frames (~80ms) per dot, enemies 0.2 frames
+//     (effectively instant) — then the ribbon fades in over 0.3s once
+//     the dots are out. The port replays that stagger every time a path
+//     recomputes (preview, commit, rewind).
+//   - One deliberate deviation: Unity's dot alpha runs 1.0 -> 0.4, but
+//     that reads as solid world objects next to the piggy, so the port
+//     runs 0.75 -> 0.3 — faded enough to read as "not in the world".
 //   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
 //     Red (0.961, 0.478, 0.506) = #F57A81, Green (0.265, 0.840, 0.629)
 //     = #44D6A0, Brown (0.753, 0.576, 0.361) = #C0935C.
@@ -22,7 +35,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=6';
+import { T } from './types.js?v=7';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -65,6 +78,7 @@ export class Renderer {
     this.centers = []; // [{row, col, x, y}] for hit-testing
     this.boardW = 0;
     this.boardH = 0;
+    this.pathAnims = new Map(); // char id -> {sig, start} for the stagger
   }
 
   layout(game, width, height) {
@@ -136,9 +150,10 @@ export class Renderer {
     ctx.fill();
   }
 
-  draw(game, { showPaths = true } = {}) {
+  draw(game, { showPaths = true, stagger = true } = {}) {
     const ctx = this.ctx;
     const s = this.size;
+    const now = performance.now();
     ctx.clearRect(0, 0, this.boardW, this.boardH);
     // Level-colour background, full bleed across the board.
     ctx.fillStyle = COLORS.bg;
@@ -203,35 +218,69 @@ export class Renderer {
     }
 
     // Paths (under the characters). Unity draws a ribbon in the
-    // character's colour at alpha 0.3 (Character.cs) plus a chain of
-    // circles that shrink 0.05/step and fade 1 -> 0.4 (Cell.cs).
-    // The final step is a hollow ring, as in the Unity screenshot.
+    // character's colour at alpha 0.3 (Character.cs, widthMultiplier 1.1)
+    // plus a chain of dots that shrink 0.05/step and fade along the path
+    // (Cell.cs). The dots (1.0 across) fit inside the ribbon (1.1 wide),
+    // and the character (1.5 across) is clearly bigger than any dot.
+    // Dots stagger in one by one from the character outward, then the
+    // ribbon fades in over 0.3s — the RevealPathLoop choreography.
+    // The stagger replays whenever a path recomputes (new signature).
     if (showPaths) {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
         const path = this.pathFor(game, ch);
-        if (!path || path.length === 0) continue;
+        if (!path || path.length === 0) {
+          this.pathAnims.delete(ch.id);
+          continue;
+        }
         const color = CHAR_COLORS[ch.kind] || '#888';
+        const isPreview = !!game.previewState;
+        const sig = `${ch.id}|${isPreview ? 'p' : 'n'}|` +
+          path.map((p) => `${p.row},${p.col}`).join('|');
+        let anim = this.pathAnims.get(ch.id);
+        if (!anim || anim.sig !== sig) {
+          anim = { sig, start: now };
+          this.pathAnims.set(ch.id, anim);
+        }
+        // Player DrawPathDelay is 5 frames (~80ms) per dot; enemies 0.2
+        // frames, effectively instant.
+        const stepMs = ch.kind === 'player' ? 80 : 0;
+        const dotMs = 300; // ColorBounce scale rate 20-30 frames to settle
         const startX = this.cellCenterX(ch.row, ch.col);
         const startY = this.cellCenterY(ch.row);
-        ctx.strokeStyle = color;
-        ctx.globalAlpha = 0.3;
-        ctx.lineWidth = s * 0.5;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        for (const step of path) {
-          ctx.lineTo(this.cellCenterX(step.row, step.col), this.cellCenterY(step.row));
+        // Ribbon fades in over 0.3s once the last dot is out.
+        const ribbonAt = anim.start + (path.length - 1) * stepMs;
+        const ribbonP = stagger
+          ? Math.min(1, Math.max(0, (now - ribbonAt) / 300))
+          : 1;
+        if (ribbonP > 0) {
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.3 * ribbonP;
+          ctx.lineWidth = s * 1.1;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          for (const step of path) {
+            ctx.lineTo(this.cellCenterX(step.row, step.col), this.cellCenterY(step.row));
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
         }
-        ctx.stroke();
-        ctx.globalAlpha = 1;
         path.forEach((step, i) => {
           const px = this.cellCenterX(step.row, step.col);
           const py = this.cellCenterY(step.row);
-          const alpha = Math.max(0.4, 1 - i * 0.1);
-          const radius = s * Math.max(0.2, 0.5 - i * 0.025);
-          ctx.globalAlpha = alpha;
+          // Faded on purpose (see header): 0.75 -> 0.3, so path dots read
+          // as "not in the world" next to the solid character.
+          const targetAlpha = Math.max(0.3, 0.75 - i * 0.07);
+          const targetR = Math.max(0.2, 0.5 - i * 0.025);
+          const p = stagger
+            ? Math.min(1, Math.max(0, (now - anim.start - i * stepMs) / dotMs))
+            : 1;
+          if (p <= 0) return;
+          const e = 1 - Math.pow(1 - p, 3); // ease-out: grows in from dot size
+          const radius = s * (0.2 + (targetR - 0.2) * e);
+          ctx.globalAlpha = targetAlpha * e;
           if (i === path.length - 1) {
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -349,7 +398,9 @@ export class Renderer {
   drawCharacter(ch, x, y, s) {
     const ctx = this.ctx;
     const color = CHAR_COLORS[ch.kind] || '#888';
-    const r = s * (ch.kind === 'player' ? 0.55 : 0.5);
+    // Characters sit at scale 1.5 in Unity (1.5 across vs 1.0 for a path
+    // dot) — clearly bigger than any dot on their path.
+    const r = s * 0.75;
     this.circle(x, y, r, color);
     if (ch.kind === 'bomb') {
       // Same red as an enemy in Unity; the white ring tells it apart.
