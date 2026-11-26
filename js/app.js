@@ -23,7 +23,7 @@ function saveProgress() {
 }
 
 function showMenu() {
-  $('menuView').style.display = '';
+  $('menuView').style.display = 'block';
   $('playView').style.display = 'none';
   if (rafId) cancelAnimationFrame(rafId);
   document.title = 'Stillpoint — HTML prototype';
@@ -31,7 +31,7 @@ function showMenu() {
 
 function showPlay() {
   $('menuView').style.display = 'none';
-  $('playView').style.display = '';
+  $('playView').style.display = 'block';
   document.title = `${currentMeta?.name || 'Level'} — Stillpoint`;
 }
 
