@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=15';
-import { Nav, ORIENTATION } from './nav.js?v=15';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=16';
+import { Nav, ORIENTATION } from './nav.js?v=16';
 
 const key = (row, col) => `${row},${col}`;
 
@@ -73,7 +73,7 @@ export class Game {
     }
     this.turn = 0;
     this.wallsBuilt = 0;
-    this.collected = { [T.ENDPOINT]: 0, [T.COLLECTABLE]: 0, [T.LURE]: 0 };
+    this.collected = { [T.ENDPOINT]: 0, [T.COLLECTABLE]: 0, [T.LURE]: 0, [T.WAYPOINT]: 0 };
     this.collectOrderIndex = 0;
     this.history = [];
     this.previewState = null;

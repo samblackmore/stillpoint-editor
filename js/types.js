@@ -40,8 +40,12 @@ export const CHARACTER_KINDS = {
   [T.DIGGER]: 'digger',
 };
 
-// Item types a character can pick up by stepping on the cell.
-export const ITEM_TYPES = new Set([T.ENDPOINT, T.COLLECTABLE, T.LURE]);
+// Item types a character can pick up by stepping on the cell. Waypoints
+// count too: Unity's Waypoint.CanBePickedUp is true, so the piggy
+// collects the waypoint on arrival and moves on to its next target —
+// without this the waypoint sat in terrain (code 7) and never rendered
+// as an item, and the piggy got stuck re-targeting it.
+export const ITEM_TYPES = new Set([T.ENDPOINT, T.COLLECTABLE, T.LURE, T.WAYPOINT]);
 
 // Types that sit on a cell without being collected or moving. The OldTimer
 // is an Item in Unity (not a Character): the player paths toward it and the
