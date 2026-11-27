@@ -172,6 +172,11 @@ canvas#board {
   height: auto;
   touch-action: manipulation;
   cursor: pointer;
+  /* Mobile browsers paint a translucent blue tap highlight over the
+     tapped element — on a board-sized canvas the whole board flashes
+     blue for a moment on every tap. Not the game (its preview darkens
+     the board and stays dark while previewing); kill the highlight. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Unity-style HUD overlaid on the board: objectives panel top-left,
