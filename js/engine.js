@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=35';
-import { Nav, ORIENTATION } from './nav.js?v=35';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=36';
+import { Nav, ORIENTATION } from './nav.js?v=36';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -28,6 +28,15 @@ import { Nav, ORIENTATION } from './nav.js?v=35';
 // advances all at once; these only stage the visual slides.
 export const MOVE_MS = 1000;
 export const MOVE_STAGGER_MS = 300;
+// Snap: easeOutExpo reaches 98% of the way at ~0.56s of the 1s slide,
+// so the character is visually at its destination long before the
+// slide's full second is up — but the input lock waited for the whole
+// slide, so the controls felt dead for ~half a second after the piggy
+// had arrived (Sam, Nov 27: "jump the player to destination when
+// they're 98% there"). A slide counts as done when easeOutExpo hits
+// 0.98: 1 - 2^(-10t) = 0.98 → t ≈ 0.564. The knob is MOVE_SNAP.
+export const MOVE_SNAP = 0.98;
+export const MOVE_SNAP_MS = Math.ceil(MOVE_MS * (-Math.log2(1 - MOVE_SNAP) / 10)); // ceil: the earliest ms the ease reaches 0.98
 
 const key = (row, col) => `${row},${col}`;
 
@@ -275,12 +284,15 @@ export class Game {
   }
 
   // True while any character's step slide is still running (Unity blocks
-  // input during the multi-turn move animation). Explosions run longer
-  // but don't block input — they're cosmetic.
+  // input during the multi-turn move animation). A slide counts as done
+  // at the snap (MOVE_SNAP), not at the full 1s — the last 2% of the
+  // ease is imperceptible, so input comes back as soon as the
+  // characters have visually arrived. Explosions run longer but don't
+  // block input — they're cosmetic.
   movesAnimating(now = Date.now()) {
     if (!this.movePlan.length) return false;
     const lastDelay = Math.max(...this.movePlan.map((m) => m.delay));
-    return now < this.movePlanAt + lastDelay + MOVE_MS;
+    return now < this.movePlanAt + lastDelay + MOVE_SNAP_MS;
   }
 
   commit() {
@@ -341,7 +353,7 @@ export class Game {
     // their next cell instantly and movesAnimating() stays false.
     this.movePlan = [];
     this.movePlanAt = Date.now();
-    const slideMs = animate ? MOVE_MS : 0;
+    const slideMs = animate ? MOVE_SNAP_MS : 0;
     let delay = 0;
     for (const mover of movers) {
       if (!mover.alive || mover.finished || mover.sleeping) continue;
@@ -408,7 +420,7 @@ export class Game {
   // lure left it sitting there. `delay` is the character's move delay in
   // this turn's plan; the explosion (if any) starts when its slide lands
   // (`slideMs` is 0 on a no-animation turn, so it starts at once).
-  onArrive(mover, delay = 0, slideMs = MOVE_MS) {
+  onArrive(mover, delay = 0, slideMs = MOVE_SNAP_MS) {
     const k = key(mover.row, mover.col);
     const item = this.items.get(k);
     if (item !== undefined && ITEM_TYPES.has(item.type)) {

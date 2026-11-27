@@ -7,7 +7,7 @@
 //   D1 (row-1, col)  D2 (row+1, col)  D3 (row, col+1)  D4 (row, col-1)
 //   D5/D6: the parity-dependent diagonals.
 // Orientation "vertical" (1): the same topology with rows/columns swapped.
-import { T } from './types.js?v=35';
+import { T } from './types.js?v=36';
 
 export const ORIENTATION = { HORIZONTAL: 0, VERTICAL: 1 };
 
@@ -94,8 +94,17 @@ export class Nav {
       if (curDist > searchDistance) break;
 
       const accessible = [];
+      // Unity's Search has a "dirty hack" (it "should use the
+      // character's StopOn collection"): you can't step from a pin cell
+      // onto another pin cell. Without it, a player routes ALONG the
+      // pin row to reach a lure on the other side — and stepping on a
+      // pin finishes the piggy, so it never gets there (Sam, Nov 27).
+      // A pin is still a valid destination (ReachEdge): the search
+      // records it as found, it just doesn't expand beyond it.
+      const currentIsPin = this.typesAt(current.row, current.col).includes(T.PIN);
       for (const [nr, nc] of neighbours(current.row, current.col, H, W, this.orientation)) {
         const types = this.typesAt(nr, nc);
+        if (currentIsPin && types.includes(T.PIN)) continue;
         if (!types.every((t) => costOf(t) > -1)) continue;
         accessible.push([nr, nc, types]);
       }

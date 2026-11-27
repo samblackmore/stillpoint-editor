@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=35';
-import { Renderer } from './render.js?v=35';
-import { parseLevel, loadLevelFile } from './levels.js?v=35';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=35';
+import { Game } from './engine.js?v=36';
+import { Renderer } from './render.js?v=36';
+import { parseLevel, loadLevelFile } from './levels.js?v=36';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=36';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -173,7 +173,11 @@ function updateHUD() {
   const banner = $('statusBanner');
   if (game.status === 'won') {
     banner.className = 'banner win';
-    banner.textContent = `🎉 ${game.winReason || 'Level complete!'} — ${game.turn} moves.`;
+    // On a factory level the win screen is also the way on: tapping
+    // anywhere advances to the next level from the same factory, so
+    // say so (Sam, Nov 27). Other levels have no tap-to-continue, so
+    // the line stays off there.
+    banner.textContent = `🎉 ${game.winReason || 'Level complete!'} — ${game.turn} moves.${currentMeta?.factory ? ' Tap anywhere to continue.' : ''}`;
     if (currentMeta?.id) {
       done.add(currentMeta.id);
       if (!best[currentMeta.id] || game.turn < best[currentMeta.id]) {

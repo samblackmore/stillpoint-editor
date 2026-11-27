@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=35';
-import { MOVE_MS } from './engine.js?v=35';
+import { T } from './types.js?v=36';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=36';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -740,17 +740,21 @@ export class Renderer {
     const start = (game.movePlanAt || 0) + plan.delay;
     const p = Math.min(1, Math.max(0, (now - start) / MOVE_MS));
     const e = p >= 1 ? 1 : 1 - Math.pow(2, -10 * p); // easeOutExpo
+    // Snap: once the ease is 98% of the way there the character is
+    // visually at its destination — pin it there (MOVE_SNAP), so the
+    // last imperceptible fraction doesn't keep it floating mid-cell.
+    const ee = e >= MOVE_SNAP ? 1 : e;
     const x0 = this.cellCenterX(plan.fromRow, plan.fromCol);
     const y0 = this.cellCenterY(plan.fromRow);
     const x1 = this.cellCenterX(ch.row, ch.col);
     const y1 = this.cellCenterY(ch.row);
-    return { x: x0 + (x1 - x0) * e, y: y0 + (y1 - y0) * e };
+    return { x: x0 + (x1 - x0) * ee, y: y0 + (y1 - y0) * ee };
   }
 
   isSliding(game, ch, now) {
     const plan = (game.movePlan || []).find((m) => m.ch === ch);
     if (!plan) return false;
-    return now < (game.movePlanAt || 0) + plan.delay + MOVE_MS;
+    return now < (game.movePlanAt || 0) + plan.delay + MOVE_SNAP_MS;
   }
 
   // Pickup explosions: when a character lands on an endpoint or lure,

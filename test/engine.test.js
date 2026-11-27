@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
-import { Game } from '../js/engine.js';
+import { Game, MOVE_MS, MOVE_SNAP_MS } from '../js/engine.js';
 import { Renderer, previewOverlayAlpha } from '../js/render.js';
 import { parseLevel } from '../js/levels.js';
 import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
@@ -422,4 +422,63 @@ test('flood distance detours around walls (not as the crow flies)', () => {
   assert.equal(nav.distance(0, 0, 0, 3), 3);
   assert.equal(dist.get('1,1'), undefined); // walls are never flooded
   assert.equal(dist.get('3,1'), 4); // the gap itself is reachable
+});
+
+// ---------- slide snap (v36) ----------
+
+test('input comes back when the slide snaps at 98%, not at the full second', () => {
+  // 3x3: pin row at the bottom, an endpoint one cell above the piggy.
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  game.stepForward(); // animated: the piggy slides onto the endpoint
+  const t0 = game.movePlanAt;
+  assert.equal(game.movePlan.length, 1);
+  assert.equal(game.movesAnimating(t0 + MOVE_SNAP_MS - 1), true);
+  assert.equal(game.movesAnimating(t0 + MOVE_SNAP_MS), false);
+  assert.equal(game.movesAnimating(t0 + MOVE_MS), false);
+  // The endpoint explosion starts when the slide lands (the snap),
+  // not at the full second.
+  assert.equal(game.pickupFx.length, 1);
+  assert.equal(game.pickupFx[0].at, t0 + MOVE_SNAP_MS);
+});
+
+test('a sliding character snaps exactly onto its destination at 98%', () => {
+  const renderer = stubRenderer();
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  renderer.layout(game, 390, 700);
+  game.stepForward();
+  const ch = game.players()[0];
+  const t0 = game.movePlanAt;
+  const destX = renderer.cellCenterX(ch.row, ch.col);
+  const destY = renderer.cellCenterY(ch.row);
+  const atSnap = renderer.charPos(game, ch, t0 + MOVE_SNAP_MS);
+  assert.ok(Math.abs(atSnap.x - destX) < 1e-9 && Math.abs(atSnap.y - destY) < 1e-9);
+  const mid = renderer.charPos(game, ch, t0 + 300);
+  assert.ok(Math.hypot(mid.x - destX, mid.y - destY) > 1); // still gliding at 300ms
+  assert.equal(renderer.isSliding(game, ch, t0 + MOVE_SNAP_MS - 1), true);
+  assert.equal(renderer.isSliding(game, ch, t0 + MOVE_SNAP_MS), false);
+});
+
+// ---------- pin routing (v36) ----------
+
+test('a player does not route to a lure along the pin row', () => {
+  // 5x4: pin row along the bottom; the only route from the piggy (2,4)
+  // to the lure (3,0) runs along the pin row — Unity's Search blocks
+  // pin-to-pin steps, so the piggy must not take it.
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18 18 18', '0 1 1 1 0', '0 0 0 1 3', '6 0 0 1 0'],
+    objectives: {},
+  }));
+  const p = game.players()[0];
+  assert.equal(p.target.type, T.PIN);
+  assert.deepEqual(p.path.map((s) => [s.row, s.col]), [[1, 4], [0, 4]]);
+  // The path ends ON a pin (ReachEdge) — it never passes THROUGH one
+  // to reach something else.
+  const through = p.path.slice(0, -1);
+  assert.ok(!through.some((s) => game.terrain[s.row][s.col] === T.PIN));
 });
