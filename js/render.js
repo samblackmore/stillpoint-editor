@@ -118,8 +118,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=33';
-import { MOVE_MS } from './engine.js?v=33';
+import { T } from './types.js?v=34';
+import { MOVE_MS } from './engine.js?v=34';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -194,6 +194,17 @@ function flashTri(t, intervalS) {
 // seg3 bottom-right, seg4 bottom-left, seg5 left vertical, seg6 top-left.
 const SEGMENT_INTERVALS = [1.0, 1.2, 0.8, 1.4, 0.6, 1.6];
 
+// Default camera zoom, portrait phones only: the board is laid out as
+// if it were at least this many cells wide, so a small level looks
+// small on screen instead of stretching to fill the width — the camera
+// stays zoomed out. A level this wide or wider fills the screen;
+// anything wider zooms out to fit, as before. The number is the knob:
+// raise it and small levels shrink further (Sam, Nov 27 — "we can
+// always adjust the eight number if the small levels are looking too
+// small"). Landscape/desktop keeps the old behaviour (fit the level to
+// the board) — the zoom question there is still open.
+const MIN_FIT_COLS = 8;
+
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -221,7 +232,13 @@ export class Renderer {
     // 0.5*(row&1)), y = 1.5*s*(h-1-row). The offset keys off the JSON
     // row; the vertical position flips it, because Unity's world Y
     // increases upward — JSON row 0 is the bottom of the screen.
-    const boardW = 2 * s * (w - 1) + 2 * s + (h > 1 ? s : 0);
+    const portrait = height > width;
+    // In portrait the width is fitted to the wider of the level and the
+    // default-zoom reference (MIN_FIT_COLS), so a 5-wide level takes
+    // ~5/8 of the screen instead of all of it. The content itself still
+    // uses the real level width, so it stays centred.
+    const fitW = portrait ? Math.max(w, MIN_FIT_COLS) : w;
+    const boardW = 2 * s * (fitW - 1) + 2 * s + (h > 1 ? s : 0);
     const boardH = 1.5 * s * (h - 1) + 2 * s;
     const scale = Math.min(width / boardW, height / boardH, 1.4);
     this.size = s * scale;

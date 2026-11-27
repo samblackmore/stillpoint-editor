@@ -8,6 +8,7 @@ import path from 'node:path';
 import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
 import { Game } from '../js/engine.js';
+import { Renderer } from '../js/render.js';
 import { parseLevel } from '../js/levels.js';
 import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
 
@@ -358,4 +359,46 @@ test('the flag works where step-forward is disabled', () => {
   assert.equal(game.stepForward({ animate: false }), false);
   assert.equal(runFlag(game), 4);
   assert.equal(game.status, 'won');
+});
+
+// ---------- default camera zoom (v34) ----------
+
+// layout() needs a canvas and window.devicePixelRatio; stub both.
+function stubRenderer() {
+  globalThis.window = { devicePixelRatio: 1 };
+  const canvas = { getContext: () => ({ setTransform() {} }), style: {} };
+  return new Renderer(canvas);
+}
+
+function contentWidth(renderer, cols) {
+  const s = renderer.size;
+  return 2 * s * (cols - 1) + 2 * s + s;
+}
+
+test('portrait: a 5-wide level looks small (8-cell default zoom)', () => {
+  const renderer = stubRenderer();
+  const game = new Game().loadLevel(loadStoreLevel('ai_1_5.json')); // 5x5
+  renderer.layout(game, 390, 700);
+  // The 8-cell reference width is 578px at the base size, so the scale
+  // is 390/578 and the 5-wide content is ~65% of the screen, centred.
+  assert.ok(Math.abs(contentWidth(renderer, 5) / 390 - 0.65) < 0.02);
+  assert.ok(renderer.size < 34);
+  // Centred: the left margin equals the right margin.
+  const left = renderer.originX - renderer.size;
+  assert.ok(Math.abs(left - (390 - contentWidth(renderer, 5) - left)) < 1);
+});
+
+test('portrait: a 9-wide level still fills the screen', () => {
+  const renderer = stubRenderer();
+  const game = new Game().loadLevel(loadStoreLevel('level0.json')); // 9x10
+  renderer.layout(game, 390, 700);
+  assert.ok(Math.abs(contentWidth(renderer, 9) / 390 - 1) < 0.02);
+});
+
+test('landscape: the old fit behaviour is unchanged', () => {
+  const renderer = stubRenderer();
+  const game = new Game().loadLevel(loadStoreLevel('ai_1_5.json')); // 5x5
+  renderer.layout(game, 800, 400);
+  // No 8-cell reference in landscape: the 1.4x cap binds, as before.
+  assert.ok(Math.abs(renderer.size - 34 * 1.4) < 0.01);
 });
