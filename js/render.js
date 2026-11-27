@@ -118,8 +118,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=29';
-import { MOVE_MS } from './engine.js?v=29';
+import { T } from './types.js?v=30';
+import { MOVE_MS } from './engine.js?v=30';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -339,7 +339,14 @@ export class Renderer {
       ? Math.min(darkTarget, this.bgDark + darkStep)
       : Math.max(darkTarget, this.bgDark - darkStep);
     const d = this.bgDark;
-    ctx.fillStyle = `rgb(${Math.round(79 - 16 * d)}, ${Math.round(109 - 22 * d)}, ${Math.round(130 - 26 * d)})`;
+    // The board is the level's own colour: a factory's chapter colour
+    // for generated levels, the JSON colour for the three hand-made
+    // levels that carry one, otherwise the default #4f6d82 (see the
+    // comment above for the preview darkening). Same 0.2-toward-black
+    // dim as before, just from the level's colour instead of the constant.
+    const [br, bg2, bb] = hexRgb(game.def?.color || COLORS.bg);
+    const dim = (v) => Math.round(v * (1 - 0.2 * d));
+    ctx.fillStyle = `rgb(${dim(br)}, ${dim(bg2)}, ${dim(bb)})`;
     ctx.fillRect(0, 0, this.boardW, this.boardH);
 
     // Cells whose own marker lights up on a path: pins (Cell.BecomePathOf

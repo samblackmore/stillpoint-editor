@@ -17,6 +17,11 @@ export function parseLevel(raw) {
     startWithCellsHidden: !!def.startWithCellsHidden,
     hints: (def.hints || []).map((h) => ({ X: h.X ?? h.x, Y: h.Y ?? h.y })),
     objectives: normalizeObjectives(def.objectives || {}),
+    // Level colour: only three hand-made levels carry one (the Friends
+    // debug levels, #567AA1 — their chapter colour); generated levels
+    // get their factory's chapter colour from the generator. Without
+    // one the renderer falls back to the default blue.
+    color: def.color || null,
     name: def.name || null,
     id: def.id || null,
   };
@@ -71,5 +76,6 @@ export function serializeLevel(def) {
     startWithCellsHidden: !!def.startWithCellsHidden,
     hints: def.hints || [],
     objectives: def.objectives || {},
+    color: def.color || undefined,
   };
 }

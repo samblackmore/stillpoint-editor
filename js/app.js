@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=29';
-import { Renderer } from './render.js?v=29';
-import { parseLevel, loadLevelFile } from './levels.js?v=29';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=29';
+import { Game } from './engine.js?v=30';
+import { Renderer } from './render.js?v=30';
+import { parseLevel, loadLevelFile } from './levels.js?v=30';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=30';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -27,6 +27,9 @@ function showMenu() {
   $('playView').style.display = 'none';
   if (rafId) cancelAnimationFrame(rafId);
   document.title = 'Stillpoint — HTML prototype';
+  // Back to the default blue in the phone browser chrome.
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = '#4f6d82';
 }
 
 function showPlay() {
@@ -74,6 +77,9 @@ function startLevel(def, meta) {
   game = new Game().loadLevel(def);
   game.hintsShown = false; // Unity only shows hints on demand (H / ? button)
   showPlay();
+  // The phone browser chrome matches the level's background colour.
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = def.color || '#4f6d82';
   $('levelName').textContent = meta.name;
   $('statusBanner').className = 'banner';
   $('statusBanner').textContent = '';
@@ -212,14 +218,17 @@ async function startFromParams() {
     const factoryId = params.get('factory');
     let cfg = await loadConfig();
     let factoryName = '';
+    let factoryColor = null;
     if (factoryId) {
       const factory = await loadFactory(factoryId);
       if (factory) {
         cfg = { ...DEFAULT_CONFIG, ...factory.settings };
         factoryName = ` (${factory.name})`;
+        factoryColor = factory.color || null;
       }
     }
-    const res = generateLevel(seed, cfg);
+    // The level takes its factory's chapter colour as its background.
+    const res = generateLevel(seed, cfg, factoryColor);
     if (!res) return showMenu();
     startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random' });
     return;

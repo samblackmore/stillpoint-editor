@@ -9,7 +9,7 @@ import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
 import { Game } from '../js/engine.js';
 import { parseLevel } from '../js/levels.js';
-import { generateLevel, dailySeed } from '../js/generator.js';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url)) + '/..';
 const STORE = path.join(ROOT, 'levels/store');
@@ -99,6 +99,44 @@ test('generated levels always load and have a player', () => {
     assert.equal(game.players().length, 1);
     assert.equal(game.status, 'playing');
   }
+});
+
+test('generated levels have a pin row and pin-every-piggy', () => {
+  // Every hand-made level ends on a row of pin rings along the bottom
+  // edge (JSON row 0), with ReachEdge sitting alongside the collect
+  // objectives — generated levels were missing both, so the piggy had
+  // nowhere to pin and the level just ended on the last collect.
+  for (let i = 0; i < 20; i++) {
+    const { level } = generateLevel(`pins-${i}`);
+    assert.ok(level.grid[0].every((t) => t === T.PIN), `seed pins-${i}: bottom row is pins`);
+    assert.equal(level.objectives.ReachEdge, true);
+  }
+});
+
+test('generated survival levels are ringed with edge, not pins', () => {
+  // Unity's five survival-only levels have no pins at all (a pin would
+  // end the run the moment the piggy reached it) and are ringed with
+  // edge cells: the piggy beelines for the void and the player walls it
+  // off to survive N turns. Generated survival levels do the same.
+  const cfg = {
+    ...DEFAULT_CONFIG,
+    survivalTurnCount: { min: 7, max: 7 },
+    endPoints: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+    collectables: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+    lures: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+  };
+  const { level } = generateLevel('surv-pins', cfg);
+  assert.ok(!level.grid.flat().includes(T.PIN), 'no pins anywhere');
+  assert.ok(level.grid[0].every((t) => t === T.EDGE), 'top row is edge');
+  assert.ok(level.grid[level.grid.length - 1].every((t) => t === T.EDGE), 'bottom row is edge');
+  assert.equal(level.objectives.ReachEdge, false);
+  assert.equal(level.objectives.SurvivalTurnCount, 7);
+});
+
+test('generated levels carry their factory colour', () => {
+  const { level } = generateLevel('colour-test', DEFAULT_CONFIG, '#6F70AC');
+  assert.equal(level.color, '#6F70AC');
+  assert.equal(generateLevel('colour-test-2').level.color, null);
 });
 
 // ---------- level store ----------

@@ -7,9 +7,9 @@
 // around the seeds. Everything else is placed by rejection sampling with
 // minimum-separation rules (LayoutCells), retrying the whole level up to
 // 100 times when a placement fails.
-import { T } from './types.js?v=29';
-import { RNG } from './rng.js?v=29';
-import { Nav, ORIENTATION } from './nav.js?v=29';
+import { T } from './types.js?v=30';
+import { RNG } from './rng.js?v=30';
+import { Nav, ORIENTATION } from './nav.js?v=30';
 
 const DENSITY = { VerySparse: 1.5, Sparse: 1.3, Normal: 1, Dense: 0.75 };
 
@@ -84,6 +84,7 @@ class Layout {
       for (let attempt = 0; attempt < 100 && !placed; attempt++) {
         const [x, y] = layoutFn();
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) continue;
+        if (this.cells[y][x] === T.PIN) continue; // the pin row is sacred
         if (this.cells[y][x] === type) continue;
         if (mustBePlacedOnEmpty && this.cells[y][x] !== T.EMPTY) continue;
         if (separation) {
@@ -114,10 +115,20 @@ class Layout {
   }
 }
 
-function tryGenerate(rng, cfg) {
+function tryGenerate(rng, cfg, color) {
   const width = rv(rng, cfg.width);
   const height = rv(rng, cfg.height);
   const layout = new Layout(rng, width, height);
+  // Survival mode is decided up front — the roll is here, before any
+  // terrain, so the board and the objectives agree for any config.
+  // A level is survival-mode when it has turns to survive and no
+  // collect objective is possible (no must-collect in the config).
+  const survival = rv(rng, cfg.survivalTurnCount);
+  const couldCollect =
+    cfg.endPoints.mustCollectAtLeast > 0 ||
+    cfg.collectables.mustCollectAtLeast > 0 ||
+    cfg.lures.mustCollectAtLeast > 0;
+  const survivalMode = survival > 0 && !couldCollect;
   const density = DENSITY[cfg.wallDensity] ?? 1;
   const wallSeeds = Array.from({ length: rv(rng, cfg.wallSeedCount) }, () => layout.randomBox());
 
@@ -154,10 +165,44 @@ function tryGenerate(rng, cfg) {
   if (cfg.edgeLeft) for (const row of layout.cells) row[0] = T.EDGE;
   if (cfg.edgeRight) for (const row of layout.cells) row[layout.width - 1] = T.EDGE;
 
+  if (survivalMode) {
+    // Survival mode: no pins — Unity's five survival-only levels have
+    // none (a pin would end the run the moment the piggy reached it).
+    // Instead the board is ringed with edge cells, as in Unity's
+    // survival levels (level0.json): the piggy beelines for the void
+    // and the player walls it off to survive N turns.
+    for (let x = 0; x < layout.width; x++) {
+      layout.cells[0][x] = T.EDGE;
+      layout.cells[layout.height - 1][x] = T.EDGE;
+    }
+    for (const row of layout.cells) {
+      row[0] = T.EDGE;
+      row[layout.width - 1] = T.EDGE;
+    }
+  } else {
+    // Pins: the bottom row (JSON row 0) is the piggy's destination — in
+    // the hand-made levels it's a full row of pin rings along the bottom
+    // edge of the screen, and ReachEdge ("Pin every piggy") is the
+    // ending on 207 of 231 of them. Placed after the walls and the edge
+    // border, so the pin row overwrites walls there (as in the hand-made
+    // levels, where the pin row is clear) but never edge cells — with
+    // edgeTop the pins sit one row in from the bottom edge border.
+    // Items are laid out after this, and layoutCells never overwrites
+    // a pin (see above).
+    const pinRow = cfg.edgeTop ? 1 : 0;
+    for (let x = 0; x < layout.width; x++) {
+      if (layout.cells[pinRow][x] !== T.EDGE) layout.cells[pinRow][x] = T.PIN;
+    }
+  }
+
   const ok =
     layout.layoutCells(T.PLAYER, () => layout.randomInnerBox(), cfg.playerCount, {
       mustBePlacedOnEmpty: false,
-      separation: { [T.EDGE]: 3 },
+      // In survival mode the piggy starts next to the ring — that IS the
+      // game (wall it off or it walks into the void) — so no separation
+      // from the edge there. Any separation is unsatisfiable on a small
+      // ringed board anyway (every interior cell is 1 from the ring).
+      separation: survivalMode ? {} : { [T.EDGE]: 3 },
     }) &&
     layout.layoutCells(T.ENEMY, () => layout.randomBox(), rv(rng, cfg.enemyCount), {
       separation: { [T.PLAYER]: 3 },
@@ -195,6 +240,36 @@ function tryGenerate(rng, cfg) {
     });
   if (!ok) return null;
 
+  // Every player must be able to reach the level's destination at the
+  // start, and every collectable item must be reachable too — a piggy
+  // with no path is lost on the first turn, and a sealed-off endpoint
+  // or diamond can never be collected. Walls are scattered at random,
+  // so a player can end up walled into a pocket (Caverns seed
+  // v30b-stage-2-caverns-2 did exactly this); reject the level and let
+  // generateLevel retry with fresh randomness.
+  const dest = survivalMode ? T.EDGE : T.PIN;
+  const reachNav = new Nav(layout.height, layout.width, ORIENTATION.HORIZONTAL, (r, c) => {
+    const t = layout.cells[r][c];
+    return t === T.EMPTY ? [] : [t];
+  });
+  const reachable = new Set();
+  let destReachable = true;
+  for (let r = 0; r < layout.height; r++) {
+    for (let c = 0; c < layout.width; c++) {
+      if (layout.cells[r][c] !== T.PLAYER) continue;
+      const flooded = reachNav.flood([], { [T.WALL]: -1 }, r, c, layout.width * layout.height);
+      for (const f of flooded) reachable.add(`${f.row},${f.col}`);
+      if (!flooded.some((f) => layout.cells[f.row][f.col] === dest)) destReachable = false;
+    }
+  }
+  if (!destReachable) return null;
+  for (let r = 0; r < layout.height; r++) {
+    for (let c = 0; c < layout.width; c++) {
+      const t = layout.cells[r][c];
+      if ((t === T.ENDPOINT || t === T.COLLECTABLE) && !reachable.has(`${r},${c}`)) return null;
+    }
+  }
+
   const collectObjectives = [];
   const endCount = layout.cells.flat().filter((t) => t === T.ENDPOINT).length;
   const colCount = layout.cells.flat().filter((t) => t === T.COLLECTABLE).length;
@@ -221,12 +296,19 @@ function tryGenerate(rng, cfg) {
     });
   }
 
+  // ReachEdge ("Pin every piggy") is the ending whenever the level has
+  // pins — which is everywhere except survival mode, where there are no
+  // pins to reach and the only objective is surviving. It sits alongside
+  // the collect objectives on 207 of 231 hand-made levels: you collect
+  // the things, then pin.
   return {
     grid: layout.cells,
     orientation: 0,
     sleeping: false,
+    color: color || null,
     objectives: {
-      SurvivalTurnCount: rv(rng, cfg.survivalTurnCount),
+      ReachEdge: !survivalMode,
+      SurvivalTurnCount: survival,
       CollectItemObjectives: collectObjectives,
       CollectOrder: cfg.orderObjective ? shuffledRange(rng, colCount) : [],
     },
@@ -243,11 +325,13 @@ function shuffledRange(rng, size) {
 }
 
 // Generate a level from a seed string/number and a config.
-// Returns { level, seed } or null after 100 failed attempts.
-export function generateLevel(seed, config = DEFAULT_CONFIG) {
+// `color` is the level's background colour (a factory's chapter colour);
+// without one the level renders in the default blue. Returns
+// { level, seed } or null after 100 failed attempts.
+export function generateLevel(seed, config = DEFAULT_CONFIG, color = null) {
   const rng = new RNG(seed);
   for (let attempt = 0; attempt < 100; attempt++) {
-    const level = tryGenerate(rng, config);
+    const level = tryGenerate(rng, config, color);
     if (level) return { level, seed };
   }
   return null;
