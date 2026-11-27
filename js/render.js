@@ -118,7 +118,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=22';
+import { T } from './types.js?v=23';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -312,6 +312,11 @@ export class Renderer {
     // toward the darkened colour over ~200ms, and back when the
     // preview clears. #4f6d82 -> #3f5768.
     const previewing = !!game.previewState;
+    // White border around the edge of the board while previewing —
+    // Sam's addition, not Unity's (Unity's preview is only the
+    // per-cell outlines + ghost hex). Toggled here, where previewing
+    // is already known; the editor never previews, so it never shows.
+    this.canvas.parentElement.classList.toggle('previewing', previewing);
     const darkTarget = previewing ? 1 : 0;
     const darkStep = dt / 200;
     this.bgDark = this.bgDark < darkTarget

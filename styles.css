@@ -177,6 +177,16 @@ input[type="text"], input[type="number"], select {
   /* The page background now matches the board colour, so the board
      lifts off the page with a soft drop shadow instead of a border. */
   box-shadow: 0 2px 6px rgba(15, 30, 40, 0.3), 0 16px 40px rgba(15, 30, 40, 0.45);
+  transition: box-shadow 0.2s ease;
+}
+
+/* While a wall preview is up, a white border rings the edge of the
+   board — Sam's addition, not Unity's (Unity's preview is only the
+   per-cell outlines + ghost hex). The ring sits above the drop
+   shadow so it reads as a crisp edge. */
+.board-wrap.previewing {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65),
+    0 2px 6px rgba(15, 30, 40, 0.3), 0 16px 40px rgba(15, 30, 40, 0.45);
 }
 
 canvas#board {

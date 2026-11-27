@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=22';
-import { Renderer } from './render.js?v=22';
-import { parseLevel, loadLevelFile } from './levels.js?v=22';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=22';
+import { Game } from './engine.js?v=23';
+import { Renderer } from './render.js?v=23';
+import { parseLevel, loadLevelFile } from './levels.js?v=23';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=23';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
