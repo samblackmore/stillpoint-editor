@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=31">
+<link rel="stylesheet" href="styles.css?v=32">
 </head>
 <body>
 <header class="top theme-white" id="siteHeader">
@@ -69,7 +69,7 @@
 
     <div class="card">
       <h2>Levels</h2>
-      <p>Hand-made levels from the Unity game, loaded as JSON from the repo. Tap a cell to preview a wall, tap it again to place it — every character's path updates live. Tap GO, or tap the same cell again, to place it. Tap a wall to preview removing it.</p>
+      <p>Hand-made levels from the Unity game, loaded as JSON from the repo. Tap a cell to preview a wall, tap it again to place it — every character's path updates live. Tap a wall to preview removing it. Tap the 🏁 flag to fast-forward turns until the piggy reaches a waypoint or a pin.</p>
       <div class="level-list" id="levelList"></div>
       <p class="small">Want to make one? <a href="editor.html">Open the level editor</a> — it exports the same JSON format.</p>
     </div>
@@ -96,12 +96,12 @@
         <button class="round-btn" id="stepBtn" title="Step forward" aria-label="Step forward">▶</button>
         <button class="round-btn" id="restartBtn" title="Restart level" aria-label="Restart level">↻</button>
       </div>
-      <button class="go-btn" id="goBtn" title="Place the previewed wall">GO</button>
+      <button class="flag-btn" id="flagBtn" title="Finish flag — fast-forward turns until the piggy reaches a waypoint or a pin (F)" aria-label="Finish flag">🏁</button>
       <div class="banner" id="statusBanner"></div>
     </div>
   </section>
 </main>
 
-<script type="module" src="js/app.js?v=31"></script>
+<script type="module" src="js/app.js?v=32"></script>
 </body>
 </html>

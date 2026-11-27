@@ -288,3 +288,63 @@ test('rewind restores the previous state', () => {
   assert.deepEqual(game.snapshot(), before);
   assert.equal(game.turn, 0);
 });
+
+// ---------- finish flag (v32) ----------
+
+// The app's flag loop, minus the 100ms timer: take no-animation turns
+// until the game ends, a waypoint is collected, a pin is reached, or
+// 100 turns pass (Unity's CommitTurnsUntilWinOrLose).
+function runFlag(game) {
+  let turns = 0;
+  while (game.status === 'playing' && turns < 100) {
+    game.stepForward({ animate: false });
+    turns++;
+    if (game.turnEvents.endpoint || game.turnEvents.pin) break;
+  }
+  return turns;
+}
+
+test('no-animation turns jump with no move plan', () => {
+  const game = new Game().loadLevel(loadStoreLevel('ai_1_4.json'));
+  const next = game.players()[0].path[0];
+  assert.equal(game.stepForward({ animate: false }), true);
+  assert.equal(game.movePlan.length, 0);
+  assert.equal(game.movesAnimating(), false);
+  const p = game.players()[0];
+  assert.deepEqual([p.row, p.col], [next.row, next.col]);
+});
+
+test('turnEvents records an endpoint pickup, then a pin finish', () => {
+  // 3x3: pin row at the bottom, an endpoint one cell above the piggy.
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  assert.equal(game.players()[0].path.length, 1);
+  game.stepForward({ animate: false });
+  assert.equal(game.turnEvents.endpoint, true);
+  assert.equal(game.turnEvents.pin, false);
+  assert.equal(game.status, 'playing');
+  game.stepForward({ animate: false });
+  assert.equal(game.turnEvents.pin, true);
+  assert.equal(game.status, 'won');
+});
+
+test('the flag loop stops at a waypoint', () => {
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  // One turn: the piggy collects the endpoint and the flag stops there,
+  // before walking on to the pin.
+  assert.equal(runFlag(game), 1);
+  assert.equal(game.status, 'playing');
+  assert.equal(game.turnEvents.endpoint, true);
+});
+
+test('the flag loop stops at a pin and wins', () => {
+  const game = new Game().loadLevel(loadStoreLevel('ai_1_4.json'));
+  assert.equal(runFlag(game), 3);
+  assert.equal(game.status, 'won');
+  assert.equal(game.turnEvents.pin, true);
+});

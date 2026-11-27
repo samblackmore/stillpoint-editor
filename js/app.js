@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=31';
-import { Renderer } from './render.js?v=31';
-import { parseLevel, loadLevelFile } from './levels.js?v=31';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=31';
+import { Game } from './engine.js?v=32';
+import { Renderer } from './render.js?v=32';
+import { parseLevel, loadLevelFile } from './levels.js?v=32';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=32';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -16,6 +16,9 @@ let game = null;
 let renderer = null;
 let currentMeta = null; // {id, name, kind}
 let rafId = null;
+// The finish flag's in-flight timer (null when no multi-turn run is
+// active). While set, the other game buttons and board taps are locked.
+let finishTimer = null;
 
 function saveProgress() {
   localStorage.setItem(BEST_KEY, JSON.stringify(best));
@@ -23,6 +26,7 @@ function saveProgress() {
 }
 
 function showMenu() {
+  if (finishTimer) { clearTimeout(finishTimer); finishTimer = null; }
   $('menuView').style.display = 'block';
   $('playView').style.display = 'none';
   if (rafId) cancelAnimationFrame(rafId);
@@ -73,6 +77,7 @@ function escapeHtml(s) {
 // ---- Play ----
 
 function startLevel(def, meta) {
+  if (finishTimer) { clearTimeout(finishTimer); finishTimer = null; }
   currentMeta = meta;
   game = new Game().loadLevel(def);
   game.hintsShown = false; // Unity only shows hints on demand (H / ? button)
@@ -147,11 +152,18 @@ function updateHUD() {
     }
     list.appendChild(li);
   }
-  $('undoBtn').disabled = game.history.length === 0 || game.movesAnimating();
-  // GO only does something while a wall preview is showing.
-  $('goBtn').disabled = !game.previewState || game.movesAnimating();
+  const flagRunning = finishTimer !== null;
+  $('undoBtn').disabled = game.history.length === 0 || game.movesAnimating() || flagRunning;
+  // The finish flag is Unity's 🏁 button: it runs while the game is in
+  // play and no wall is being previewed (in preview mode the only way
+  // to commit is tapping the previewed cell again). Levels with
+  // disableFinishFlag hide it entirely, as Unity does.
+  const flagBtn = $('flagBtn');
+  flagBtn.style.display = game.def.disableFinishFlag ? 'none' : '';
+  flagBtn.disabled = game.status !== 'playing' || !!game.previewState || game.movesAnimating() || flagRunning;
   // Step-forward also waits for the slides to land.
-  $('stepBtn').disabled = !!game.def.disableStepForward || game.movesAnimating();
+  $('stepBtn').disabled = !!game.def.disableStepForward || game.movesAnimating() || flagRunning;
+  $('restartBtn').disabled = flagRunning;
   // Hint button: only when the level has hints; it pulses gently until
   // the player asks for them (Unity's hint button does the same).
   const hintBtn = $('hintBtn');
@@ -178,9 +190,38 @@ function updateHUD() {
   }
 }
 
+// The finish flag (Unity: MenuController.FinishFlagButtonPressed ->
+// UnitController.CommitTurns / CommitTurnsUntilWinOrLose): take turns
+// with no move animation — characters jump to their next cell — one
+// every 0.1s (Unity's MoveDelayNoAnimation), until the game ends, a
+// player collects a waypoint (endpoint), a player reaches a pin, or
+// 100 turns pass (Unity's MAX_TURNS). While it runs the other game
+// buttons are disabled, like Unity's DisableGameButtonsWhileMoving.
+// Previewing is not a way in: in preview mode the only way to commit
+// is tapping the previewed cell again.
+function startFinishFlag() {
+  if (!game || game.status !== 'playing') return;
+  if (game.def.disableFinishFlag || game.previewState) return;
+  if (game.movesAnimating() || finishTimer !== null) return;
+  let turns = 0;
+  const MAX_TURNS = 100;
+  const tick = () => {
+    finishTimer = null;
+    if (!game || game.status !== 'playing') { updateHUD(); return; }
+    game.stepForward({ animate: false });
+    turns++;
+    updateHUD();
+    if (game.status !== 'playing' || game.turnEvents.endpoint || game.turnEvents.pin || turns >= MAX_TURNS) return;
+    finishTimer = setTimeout(tick, 100);
+  };
+  finishTimer = setTimeout(tick, 100);
+  updateHUD();
+}
+
 function onBoardTap(ev) {
-  // Unity blocks input while the turn's moves are still animating.
-  if (!game || game.movesAnimating()) return;
+  // Unity blocks input while the turn's moves are still animating, and
+  // while the finish flag is running its multi-turn.
+  if (!game || game.movesAnimating() || finishTimer !== null) return;
   const rect = $('board').getBoundingClientRect();
   const x = (ev.clientX - rect.left) * ($('board').width / rect.width / window.devicePixelRatio);
   const y = (ev.clientY - rect.top) * ($('board').height / rect.height / window.devicePixelRatio);
@@ -447,20 +488,27 @@ document.addEventListener('DOMContentLoaded', () => {
   $('hintBtn').addEventListener('click', showHints);
   document.addEventListener('keydown', (ev) => {
     if ((ev.key === 'h' || ev.key === 'H') && game) showHints();
+    // Unity binds the finish flag to F (KeyBindings.FinishFlag).
+    if ((ev.key === 'f' || ev.key === 'F') && game) {
+      // Don't hijack typing in a text field (the Random seed input).
+      if (ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+      startFinishFlag();
+    }
   });
   $('undoBtn').addEventListener('click', () => {
-    if (game?.movesAnimating()) return;
+    if (game?.movesAnimating() || finishTimer !== null) return;
     if (game?.rewind()) updateHUD();
   });
-  $('goBtn').addEventListener('click', () => {
-    if (game?.movesAnimating()) return;
-    if (game?.commit()) updateHUD();
+  $('flagBtn').addEventListener('click', () => {
+    if (game?.movesAnimating() || finishTimer !== null) return;
+    startFinishFlag();
   });
   $('stepBtn').addEventListener('click', () => {
-    if (game?.movesAnimating()) return;
+    if (game?.movesAnimating() || finishTimer !== null) return;
     if (game?.stepForward()) updateHUD();
   });
   $('restartBtn').addEventListener('click', () => {
+    if (finishTimer !== null) return;
     if (game) startLevel(game.def, currentMeta);
   });
   // Header colour toggle (white / player yellow), remembered across

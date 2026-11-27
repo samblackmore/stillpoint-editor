@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=31';
-import { Nav, ORIENTATION } from './nav.js?v=31';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=32';
+import { Nav, ORIENTATION } from './nav.js?v=32';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -92,6 +92,9 @@ export class Game {
     this.movePlanAt = 0; // Date.now() when the last turn's moves started
     this.pickupFx = []; // [{id, row, col, type, at}] — CollectableBase explosions, at = landing time
     this.pickupSeq = 0;
+    // What the last turn did (reset each advanceTurn): the finish flag
+    // stops when a player collects a waypoint (endpoint) or reaches a pin.
+    this.turnEvents = { endpoint: false, pin: false };
     this.status = 'playing';
     this.winReason = null;
     this.loseReason = null;
@@ -267,6 +270,7 @@ export class Game {
     // restored cells with no ghost slides or explosions.
     this.movePlan = [];
     this.pickupFx = [];
+    this.turnEvents = { endpoint: false, pin: false };
     this.recomputePaths();
   }
 
@@ -302,12 +306,12 @@ export class Game {
   }
 
   // One turn with no wall change (the step-forward button).
-  stepForward() {
+  stepForward({ animate = true } = {}) {
     if (this.status !== 'playing') return false;
     if (this.def.disableStepForward) return false;
     this.history.push(this.snapshot());
     this.turn++;
-    this.advanceTurn();
+    this.advanceTurn({ animate });
     return true;
   }
 
@@ -318,17 +322,22 @@ export class Game {
     return true;
   }
 
-  advanceTurn() {
+  advanceTurn({ animate = true } = {}) {
     this.updateSleep();
+    // What this turn did, for the finish flag's stop conditions.
+    this.turnEvents = { endpoint: false, pin: false };
     // Players first, then NPCs (Unity advances _allCharacters in load order;
     // players are listed first in the level grids we ship).
     const movers = [...this.players(), ...this.npcs()];
     // Visual move plan (Unity: MoveDelayInitial 0, +MoveDelay 0.3s per
     // character that can move). The logical state still advances at
     // once; the renderer slides each character from its old cell on
-    // this plan, so you see them move in turn.
+    // this plan, so you see them move in turn. With animate: false
+    // (the finish flag) there is no plan at all — characters jump to
+    // their next cell instantly and movesAnimating() stays false.
     this.movePlan = [];
     this.movePlanAt = Date.now();
+    const slideMs = animate ? MOVE_MS : 0;
     let delay = 0;
     for (const mover of movers) {
       if (!mover.alive || mover.finished || mover.sleeping) continue;
@@ -349,9 +358,11 @@ export class Game {
       mover.row = next.row;
       mover.col = next.col;
       mover.path = mover.path.slice(1);
-      this.onArrive(mover, delay);
-      this.movePlan.push({ ch: mover, fromRow, fromCol, delay });
-      delay += MOVE_STAGGER_MS;
+      this.onArrive(mover, animate ? delay : 0, slideMs);
+      if (animate) {
+        this.movePlan.push({ ch: mover, fromRow, fromCol, delay });
+        delay += MOVE_STAGGER_MS;
+      }
     }
 
     // Enemies (and bombs, approximated) catch adjacent players.
@@ -391,8 +402,9 @@ export class Game {
   // Character.Advance calls TryPickUpItem for whatever is on the cell) —
   // the port used to do this for players only, so an enemy landing on a
   // lure left it sitting there. `delay` is the character's move delay in
-  // this turn's plan; the explosion (if any) starts when its slide lands.
-  onArrive(mover, delay = 0) {
+  // this turn's plan; the explosion (if any) starts when its slide lands
+  // (`slideMs` is 0 on a no-animation turn, so it starts at once).
+  onArrive(mover, delay = 0, slideMs = MOVE_MS) {
     const k = key(mover.row, mover.col);
     const item = this.items.get(k);
     if (item !== undefined && ITEM_TYPES.has(item.type)) {
@@ -402,6 +414,11 @@ export class Game {
       // Count) — so the counter rises for enemies too, not just the player.
       if (this.collectOrderApplies(item)) {
         this.collected[item.type]++;
+      }
+      // A player collecting a waypoint (endpoint) stops the finish flag
+      // (Unity: CommitTurnsUntilWinOrLose breaks on EndPoint pickup).
+      if (item.type === T.ENDPOINT && mover.kind === 'player') {
+        this.turnEvents.endpoint = true;
       }
       // Lure.PickedUpBy kills only Players; an enemy just eats it.
       if (item.type === T.LURE && mover.kind === 'player') {
@@ -417,7 +434,7 @@ export class Game {
           row: mover.row,
           col: mover.col,
           type: item.type,
-          at: this.movePlanAt + delay + MOVE_MS,
+          at: this.movePlanAt + delay + slideMs,
         });
       }
     }
@@ -425,6 +442,10 @@ export class Game {
       const terrain = this.terrain[mover.row][mover.col];
       if (RULES.player.stopOn.includes(terrain)) {
         mover.finished = true;
+        // Reaching a pin stops the finish flag too (Sam's call — Unity's
+        // loop only breaks on endpoint pickup and game end, but the flag
+        // is meant to run "until reach waypoint or pins").
+        if (terrain === T.PIN) this.turnEvents.pin = true;
       }
       if (terrain === T.EDGE) {
         // Unity: a player that steps on the Edge is lost in the void.

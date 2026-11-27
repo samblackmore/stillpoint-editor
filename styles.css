@@ -511,7 +511,7 @@ canvas#board {
   50% { opacity: 0.45; }
 }
 
-.go-btn {
+.flag-btn {
   position: absolute;
   right: 16px;
   bottom: 16px;
@@ -528,8 +528,8 @@ canvas#board {
   padding: 0;
 }
 
-.go-btn:hover { background: var(--board-dark); }
-.go-btn:disabled { opacity: 0.45; cursor: default; }
+.flag-btn:hover { background: var(--board-dark); }
+.flag-btn:disabled { opacity: 0.45; cursor: default; }
 
 .objectives { list-style: none; margin: 0; padding: 0; }
 .objectives li {
