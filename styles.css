@@ -21,6 +21,13 @@
 
 ::selection { background: var(--board-yellow); color: var(--board-dark); }
 :focus-visible { outline: 2px solid var(--board-yellow); outline-offset: 2px; }
+/* Placeholders and scrollbars match the dark theme instead of the
+   browser's grey text and white scrollbar strip. */
+::placeholder { color: rgba(255, 255, 255, 0.5); }
+* { scrollbar-color: rgba(255, 255, 255, 0.35) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 
 body {
   margin: 0;
