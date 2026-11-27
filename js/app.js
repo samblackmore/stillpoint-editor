@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=23';
-import { Renderer } from './render.js?v=23';
-import { parseLevel, loadLevelFile } from './levels.js?v=23';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=23';
+import { Game } from './engine.js?v=24';
+import { Renderer } from './render.js?v=24';
+import { parseLevel, loadLevelFile } from './levels.js?v=24';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=24';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -81,8 +81,14 @@ function startLevel(def, meta) {
   layoutBoard();
   updateHUD();
   if (rafId) cancelAnimationFrame(rafId);
+  // The turn's moves animate in the renderer (staggered slides); when
+  // the last one lands, refresh the HUD so the buttons re-enable.
+  let wasAnimating = false;
   const loop = () => {
     renderer.draw(game, { showPaths: !def.hidePathOnStart || game.turn > 0 || game.previewState });
+    const animating = game.movesAnimating();
+    if (wasAnimating && !animating) updateHUD();
+    wasAnimating = animating;
     rafId = requestAnimationFrame(loop);
   };
   loop();
@@ -132,9 +138,11 @@ function updateHUD() {
     }
     list.appendChild(li);
   }
-  $('undoBtn').disabled = game.history.length === 0;
+  $('undoBtn').disabled = game.history.length === 0 || game.movesAnimating();
   // GO only does something while a wall preview is showing.
-  $('goBtn').disabled = !game.previewState;
+  $('goBtn').disabled = !game.previewState || game.movesAnimating();
+  // Step-forward also waits for the slides to land.
+  $('stepBtn').disabled = !!game.def.disableStepForward || game.movesAnimating();
   // Hint button: only when the level has hints; it pulses gently until
   // the player asks for them (Unity's hint button does the same).
   const hintBtn = $('hintBtn');
@@ -162,7 +170,8 @@ function updateHUD() {
 }
 
 function onBoardTap(ev) {
-  if (!game) return;
+  // Unity blocks input while the turn's moves are still animating.
+  if (!game || game.movesAnimating()) return;
   const rect = $('board').getBoundingClientRect();
   const x = (ev.clientX - rect.left) * ($('board').width / rect.width / window.devicePixelRatio);
   const y = (ev.clientY - rect.top) * ($('board').height / rect.height / window.devicePixelRatio);
@@ -247,12 +256,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((ev.key === 'h' || ev.key === 'H') && game) showHints();
   });
   $('undoBtn').addEventListener('click', () => {
+    if (game?.movesAnimating()) return;
     if (game?.rewind()) updateHUD();
   });
   $('goBtn').addEventListener('click', () => {
+    if (game?.movesAnimating()) return;
     if (game?.commit()) updateHUD();
   });
   $('stepBtn').addEventListener('click', () => {
+    if (game?.movesAnimating()) return;
     if (game?.stepForward()) updateHUD();
   });
   $('restartBtn').addEventListener('click', () => {

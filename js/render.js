@@ -118,7 +118,19 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=23';
+import { T } from './types.js?v=24';
+import { MOVE_MS } from './engine.js?v=24';
+
+// CollectableBase explosion (Unity): on pickup the 6 hex segments fly
+// apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
+// each with a random magnitude 1-2 units and a random 0-90° spin, then
+// fade away after a random 1-2s delay over a random 0.5-2s (Fade).
+// Canvas Y is down, so Unity's Y is flipped: segment 0 flies up-right
+// on screen, not down-right. Directions are in segment order (seg1
+// top-right edge, seg2 right vertical, seg3 bottom-right, seg4
+// bottom-left, seg5 left vertical, seg6 top-left).
+const EXPLODE_DIRS = [[0.7, -0.7], [1, 0], [0.7, 0.7], [-0.7, 0.7], [-1, 0], [-0.7, -0.7]];
+const EXPLODE_MS = 1000;
 
 const COLORS = {
   bg: '#4f6d82',
@@ -193,10 +205,11 @@ export class Renderer {
     this.rows = 0; // level height in rows (row 0 is the bottom, Unity-style)
     this.boardW = 0;
     this.boardH = 0;
-    this.pathAnims = new Map(); // char id -> {sig, start} for the stagger
+    this.pathAnims = new Map(); // char id -> {sig, start, path} for the stagger
     this.bgDark = 0; // 0 = level colour, 1 = darkened (preview mode)
     this.lastDraw = 0;
     this.previewAnim = null; // {key, start} for the ghost-hex pop
+    this.explosions = new Map(); // pickupFx id -> {x, y, base, flashMax, at, segs}
   }
 
   layout(game, width, height) {
@@ -301,6 +314,9 @@ export class Renderer {
     const ctx = this.ctx;
     const s = this.size;
     const now = performance.now();
+    // Wall-clock time (Date.now()) for the move slides and explosions —
+    // the engine stamps those in the same clock.
+    const wallNow = Date.now();
     const dt = this.lastDraw ? Math.min(100, now - this.lastDraw) : 16;
     this.lastDraw = now;
     ctx.clearRect(0, 0, this.boardW, this.boardH);
@@ -439,7 +455,9 @@ export class Renderer {
     // and the character (1.5 across) is clearly bigger than any dot.
     // Dots stagger in one by one from the character outward, then the
     // ribbon fades in over 0.3s — the RevealPathLoop choreography.
-    // The stagger replays whenever a path recomputes (new signature).
+    // The stagger replays only when the path genuinely changes: stepping
+    // along it just drops the first segment, and a recompute that lands
+    // on the same route (e.g. committing a preview) keeps the reveal.
     if (showPaths) {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
@@ -449,20 +467,30 @@ export class Renderer {
           continue;
         }
         const color = CHAR_COLORS[ch.kind] || '#888';
-        const isPreview = !!game.previewState;
-        const sig = `${ch.id}|${isPreview ? 'p' : 'n'}|` +
-          path.map((p) => `${p.row},${p.col}`).join('|');
+        // The reveal replays ONLY when the path genuinely changes.
+        // Stepping along the path (new path == old path minus its first
+        // step) just drops a segment — the dots stay revealed. Same for
+        // a recompute that lands on the same route (e.g. committing a
+        // preview): the preview flag used to restart the reveal too.
+        const seq = path.map((p) => `${p.row},${p.col}`);
+        const sig = seq.join('|');
         let anim = this.pathAnims.get(ch.id);
         if (!anim || anim.sig !== sig) {
-          anim = { sig, start: now };
+          const stepped = !!anim && anim.path && sig === anim.path.slice(1).join('|');
+          const same = !!anim && anim.path && sig === anim.path.join('|');
+          anim = { sig, start: (stepped || same) ? anim.start : now, path: seq };
           this.pathAnims.set(ch.id, anim);
         }
         // Player DrawPathDelay is 5 frames (~80ms) per dot; enemies 0.2
         // frames, effectively instant.
         const stepMs = ch.kind === 'player' ? 80 : 0;
         const dotMs = 300; // ColorBounce scale rate 20-30 frames to settle
-        const startX = this.cellCenterX(ch.row, ch.col);
-        const startY = this.cellCenterY(ch.row);
+        // The ribbon starts at the character's VISUAL position, so while
+        // it slides between cells the line stays sticky on it (Unity's
+        // DrawLine re-anchors to the character as it moves).
+        const pos = this.charPos(game, ch, wallNow);
+        const startX = pos.x;
+        const startY = pos.y;
         // Ribbon fades in over 0.3s once the last dot is out.
         const ribbonAt = anim.start + (path.length - 1) * stepMs;
         const ribbonP = stagger
@@ -607,19 +635,123 @@ export class Renderer {
       }
     }
 
+    // Pickup explosions (CollectableBase.PickedUpBy): the 6 hex segments
+    // of an endpoint or lure fly apart when a character lands on it.
+    // Above the paths, below the characters (the pieces are items).
+    this.drawExplosions(game, wallNow);
+
     // Characters: plain solid circles in their prefab colours. No faces —
-    // Unity characters are just circles.
+    // Unity characters are just circles. A character that died this turn
+    // (lure, catch) still glides to its cell before vanishing, so it is
+    // drawn while its slide runs.
     for (const ch of game.chars) {
-      if (!ch.alive) continue;
-      const x = this.cellCenterX(ch.row, ch.col);
-      const y = this.cellCenterY(ch.row);
-      this.drawCharacter(ch, x, y, s);
+      if (!ch.alive && !this.isSliding(game, ch, wallNow)) continue;
+      const pos = this.charPos(game, ch, wallNow);
+      this.drawCharacter(ch, pos.x, pos.y, s);
     }
   }
 
   pathFor(game, ch) {
     if (game.previewState && game.previewState.paths) return game.previewState.paths.get(ch.id) || [];
     return ch.path;
+  }
+
+  // Visual position of a character: during its step slide it glides from
+  // the old cell to the new one (Unity: CellMoveSpeed 1s, easeOutExpo,
+  // staggered 0.3s per character in the engine's move plan); otherwise
+  // it sits on its cell. `now` is a Date.now() clock, like the plan.
+  charPos(game, ch, now) {
+    const plan = (game.movePlan || []).find((m) => m.ch === ch);
+    if (!plan) return { x: this.cellCenterX(ch.row, ch.col), y: this.cellCenterY(ch.row) };
+    const start = (game.movePlanAt || 0) + plan.delay;
+    const p = Math.min(1, Math.max(0, (now - start) / MOVE_MS));
+    const e = p >= 1 ? 1 : 1 - Math.pow(2, -10 * p); // easeOutExpo
+    const x0 = this.cellCenterX(plan.fromRow, plan.fromCol);
+    const y0 = this.cellCenterY(plan.fromRow);
+    const x1 = this.cellCenterX(ch.row, ch.col);
+    const y1 = this.cellCenterY(ch.row);
+    return { x: x0 + (x1 - x0) * e, y: y0 + (y1 - y0) * e };
+  }
+
+  isSliding(game, ch, now) {
+    const plan = (game.movePlan || []).find((m) => m.ch === ch);
+    if (!plan) return false;
+    return now < (game.movePlanAt || 0) + plan.delay + MOVE_MS;
+  }
+
+  // Pickup explosions: when a character lands on an endpoint or lure,
+  // the hex's 6 segments fly apart (CollectableBase.PickedUpBy) — each
+  // in its own direction, easeOutQuad over 1s, random magnitude 1-2
+  // units and random 0-90° spin, then fading away after a random 1-2s
+  // delay over a random 0.5-2s, so no two pieces move alike. The engine
+  // records the pickup with its landing time; this builds the random
+  // per-segment values once, the first frame the explosion is due.
+  drawExplosions(game, now) {
+    const s = this.size;
+    for (const fx of game.pickupFx || []) {
+      if (now < fx.at || now > fx.at + 4000) continue;
+      let ex = this.explosions.get(fx.id);
+      if (!ex) {
+        const base = fx.type === T.ENDPOINT ? COLORS.endpointHex : COLORS.lureHex;
+        const flashMax = fx.type === T.ENDPOINT ? 0.8 : 0.784;
+        ex = {
+          x: this.cellCenterX(fx.row, fx.col),
+          y: this.cellCenterY(fx.row),
+          base, flashMax, at: fx.at,
+          segs: EXPLODE_DIRS.map((dir, i) => {
+            const r1 = 1 + Math.random();
+            const r2 = 1 + Math.random();
+            return {
+              i, dir, r1, r2,
+              rot: Math.random() * Math.PI / 2, // 0-90°
+              fadeDelay: Math.max(r1, r2), // seconds after `at`
+              fadeDur: 0.5 + Math.random() * 1.5, // 0.5-2s
+              // Freeze the shimmer alpha at the pickup moment — Unity
+              // destroys the Flash component, so the pieces stop shimmering.
+              alpha0: 0.392 + (flashMax - 0.392) * flashTri(fx.at, SEGMENT_INTERVALS[i]),
+            };
+          }),
+        };
+        this.explosions.set(fx.id, ex);
+      }
+      const t = Math.min(1, (now - ex.at) / EXPLODE_MS);
+      const e = 1 - Math.pow(1 - t, 2); // easeOutQuad (ExplodeTweenType 2)
+      for (const seg of ex.segs) {
+        const fadeStart = ex.at + seg.fadeDelay * 1000;
+        const fadeP = Math.min(1, Math.max(0, (now - fadeStart) / (seg.fadeDur * 1000)));
+        const alpha = seg.alpha0 * (1 - fadeP);
+        if (alpha <= 0.01) continue;
+        const ox = seg.dir[0] * seg.r1 * e * s;
+        const oy = seg.dir[1] * seg.r2 * e * s;
+        // Unity's rotateZ is counter-clockwise on screen; canvas
+        // rotates clockwise for positive angles, so negate it.
+        this.drawExplodeSegment(ex.x + ox, ex.y + oy, s, -seg.rot * e, seg.i, ex.base, alpha);
+      }
+    }
+    for (const [id, ex] of this.explosions) {
+      if (now > ex.at + 4000) this.explosions.delete(id);
+    }
+  }
+
+  // One flying hex segment: the same wedge drawHexItem draws, rotated
+  // about its own centre by `rot`.
+  drawExplodeSegment(x, y, s, rot, i, base, alpha) {
+    const ctx = this.ctx;
+    const outer = this.hexVerts(0, 0, s, s);
+    const inner = this.hexVerts(0, 0, s * 0.5, s * 0.5);
+    const j = (i + 1) % 6;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(outer[i][0], outer[i][1]);
+    ctx.lineTo(outer[j][0], outer[j][1]);
+    ctx.lineTo(inner[j][0], inner[j][1]);
+    ctx.lineTo(inner[i][0], inner[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = hexA(base, alpha.toFixed(3));
+    ctx.fill();
+    ctx.restore();
   }
 
   drawHexItem(x, y, s, base, flashMax, lit) {

@@ -18,8 +18,16 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=23';
-import { Nav, ORIENTATION } from './nav.js?v=23';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=24';
+import { Nav, ORIENTATION } from './nav.js?v=24';
+
+// Unity turn animation (UnitController + Character.AnimateMove): the
+// first character starts at once (MoveDelayInitial 0), each next
+// character 0.3s later (MoveDelay, MainGame.unity), each step taking
+// 1s (CellMoveSpeed) on an ease-out-expo glide. The logical state still
+// advances all at once; these only stage the visual slides.
+export const MOVE_MS = 1000;
+export const MOVE_STAGGER_MS = 300;
 
 const key = (row, col) => `${row},${col}`;
 
@@ -77,6 +85,13 @@ export class Game {
     this.collectOrderIndex = 0;
     this.history = [];
     this.previewState = null;
+    // Visual-only animation state (never snapshotted): the staged move
+    // plan for the last turn, and hex-item pickup explosions. The
+    // renderer reads both; restore() clears them so an undo snaps.
+    this.movePlan = []; // [{ch, fromRow, fromCol, delay}] — who slid, from where, starting when
+    this.movePlanAt = 0; // Date.now() when the last turn's moves started
+    this.pickupFx = []; // [{id, row, col, type, at}] — CollectableBase explosions, at = landing time
+    this.pickupSeq = 0;
     this.status = 'playing';
     this.winReason = null;
     this.loseReason = null;
@@ -248,7 +263,20 @@ export class Game {
     this.winReason = null;
     this.loseReason = null;
     this.previewState = null;
+    // Visual state is transient: an undo snaps characters to the
+    // restored cells with no ghost slides or explosions.
+    this.movePlan = [];
+    this.pickupFx = [];
     this.recomputePaths();
+  }
+
+  // True while any character's step slide is still running (Unity blocks
+  // input during the multi-turn move animation). Explosions run longer
+  // but don't block input — they're cosmetic.
+  movesAnimating(now = Date.now()) {
+    if (!this.movePlan.length) return false;
+    const lastDelay = Math.max(...this.movePlan.map((m) => m.delay));
+    return now < this.movePlanAt + lastDelay + MOVE_MS;
   }
 
   commit() {
@@ -295,6 +323,13 @@ export class Game {
     // Players first, then NPCs (Unity advances _allCharacters in load order;
     // players are listed first in the level grids we ship).
     const movers = [...this.players(), ...this.npcs()];
+    // Visual move plan (Unity: MoveDelayInitial 0, +MoveDelay 0.3s per
+    // character that can move). The logical state still advances at
+    // once; the renderer slides each character from its old cell on
+    // this plan, so you see them move in turn.
+    this.movePlan = [];
+    this.movePlanAt = Date.now();
+    let delay = 0;
     for (const mover of movers) {
       if (!mover.alive || mover.finished || mover.sleeping) continue;
       if (!mover.path || mover.path.length === 0) continue; // no path: stays put
@@ -308,11 +343,15 @@ export class Game {
         if (!RULES[mover.kind].canMoveAfterDestroyWall) continue;
         this.terrain[next.row][next.col] = T.EMPTY;
       }
+      const fromRow = mover.row;
+      const fromCol = mover.col;
       mover.oldPath = mover.path;
       mover.row = next.row;
       mover.col = next.col;
       mover.path = mover.path.slice(1);
-      this.onArrive(mover);
+      this.onArrive(mover, delay);
+      this.movePlan.push({ ch: mover, fromRow, fromCol, delay });
+      delay += MOVE_STAGGER_MS;
     }
 
     // Enemies (and bombs, approximated) catch adjacent players.
@@ -348,17 +387,41 @@ export class Game {
     return cells;
   }
 
-  onArrive(mover) {
+  // Landing on a cell. Any character can pick up an item (Unity:
+  // Character.Advance calls TryPickUpItem for whatever is on the cell) —
+  // the port used to do this for players only, so an enemy landing on a
+  // lure left it sitting there. `delay` is the character's move delay in
+  // this turn's plan; the explosion (if any) starts when its slide lands.
+  onArrive(mover, delay = 0) {
     const k = key(mover.row, mover.col);
-    if (mover.kind === 'player') {
-      const item = this.items.get(k);
-      if (item !== undefined && ITEM_TYPES.has(item.type)) {
-        this.items.delete(k);
-        if (this.collectOrderApplies(item)) {
-          this.collected[item.type]++;
-        }
-        // Collecting out of order doesn't count (CollectOrder levels).
+    const item = this.items.get(k);
+    if (item !== undefined && ITEM_TYPES.has(item.type)) {
+      this.items.delete(k);
+      // Unity counts a "collect" by items disappearing off the board,
+      // whoever picked them up (ObjectivesBox: OriginalItemCount -
+      // Count) — so the counter rises for enemies too, not just the player.
+      if (this.collectOrderApplies(item)) {
+        this.collected[item.type]++;
       }
+      // Lure.PickedUpBy kills only Players; an enemy just eats it.
+      if (item.type === T.LURE && mover.kind === 'player') {
+        mover.alive = false;
+        mover.killedBy = 'lure';
+      }
+      // Endpoint + lure are CollectableBase in Unity: their 6 hex
+      // segments explode apart on pickup. The renderer starts the
+      // explosion when this character's slide lands on the cell.
+      if (item.type === T.ENDPOINT || item.type === T.LURE) {
+        this.pickupFx.push({
+          id: this.pickupSeq++,
+          row: mover.row,
+          col: mover.col,
+          type: item.type,
+          at: this.movePlanAt + delay + MOVE_MS,
+        });
+      }
+    }
+    if (mover.kind === 'player') {
       const terrain = this.terrain[mover.row][mover.col];
       if (RULES.player.stopOn.includes(terrain)) {
         mover.finished = true;
@@ -497,7 +560,9 @@ export class Game {
           ? 'The piggy wandered off the edge'
           : dead.killedBy === 'bomb'
             ? 'The piggy was caught by a bomb'
-            : 'The piggy was caught'
+            : dead.killedBy === 'lure'
+              ? 'The piggy fell for the lure'
+              : 'The piggy was caught'
         : 'The piggy has nowhere left to go';
     }
   }
