@@ -8,7 +8,7 @@ import path from 'node:path';
 import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
 import { Game } from '../js/engine.js';
-import { Renderer } from '../js/render.js';
+import { Renderer, previewOverlayAlpha } from '../js/render.js';
 import { parseLevel } from '../js/levels.js';
 import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
 
@@ -401,4 +401,25 @@ test('landscape: the old fit behaviour is unchanged', () => {
   renderer.layout(game, 800, 400);
   // No 8-cell reference in landscape: the 1.4x cap binds, as before.
   assert.ok(Math.abs(renderer.size - 34 * 1.4) < 0.01);
+});
+
+// ---------- preview overlay flood fade (v35) ----------
+
+test('overlay alpha keeps 0.15 up close and fades to 0 at distance 6', () => {
+  assert.equal(previewOverlayAlpha(0), 0.15);
+  assert.equal(previewOverlayAlpha(1), 0.15);
+  assert.ok(Math.abs(previewOverlayAlpha(3) - 0.09) < 1e-9); // 0.15 * (1 - 2/5)
+  assert.equal(previewOverlayAlpha(6), 0);
+  assert.ok(previewOverlayAlpha(7) < 0); // beyond the fade: skipped by the renderer
+});
+
+test('flood distance detours around walls (not as the crow flies)', () => {
+  // 4x4, a wall column at col 1 rows 0-2 with a gap at (3,1).
+  const nav = new Nav(4, 4, ORIENTATION.HORIZONTAL, (r, c) => (c === 1 && r < 3 ? [T.WALL] : []));
+  const flooded = nav.flood([], { [T.WALL]: -1 }, 0, 0, 9);
+  const dist = new Map(flooded.map((f) => [`${f.row},${f.col}`, f.distance]));
+  assert.equal(dist.get('0,3'), 7); // around the gap, not the 3-step crow-flies route
+  assert.equal(nav.distance(0, 0, 0, 3), 3);
+  assert.equal(dist.get('1,1'), undefined); // walls are never flooded
+  assert.equal(dist.get('3,1'), 4); // the gap itself is reachable
 });

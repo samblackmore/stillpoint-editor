@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=34';
-import { Renderer } from './render.js?v=34';
-import { parseLevel, loadLevelFile } from './levels.js?v=34';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=34';
+import { Game } from './engine.js?v=35';
+import { Renderer } from './render.js?v=35';
+import { parseLevel, loadLevelFile } from './levels.js?v=35';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=35';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -218,11 +218,31 @@ function startFinishFlag() {
   updateHUD();
 }
 
+// On a factory level, tapping anywhere after a win advances to the
+// next level from the same factory (Sam, Nov 27). A fresh random seed
+// each time; the factory doc is re-read so edited factories (localStorage
+// overrides) carry over. The URL is kept in sync (replaceState, no
+// reload) so a refresh replays the same level. If the factory can't
+// generate (e.g. The End), stay on the win screen.
+async function nextFactoryLevel() {
+  const factoryId = currentMeta?.factory;
+  if (!factoryId || !game || game.status !== 'won') return;
+  const factory = await loadFactory(factoryId);
+  if (!factory) return;
+  const seed = String(Math.floor(Math.random() * 1e9));
+  const cfg = { ...DEFAULT_CONFIG, ...factory.settings };
+  const res = generateLevel(seed, cfg, factory.color || null);
+  if (!res) return;
+  try {
+    history.replaceState(null, '', `?random&factory=${encodeURIComponent(factoryId)}&seed=${encodeURIComponent(seed)}`);
+  } catch { /* file:// or sandboxed: the URL just doesn't update */ }
+  startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed} (${factory.name})`, kind: 'random', factory: factoryId });
+}
+
 function onBoardTap(ev) {
   // Unity blocks input while the turn's moves are still animating, and
   // while the finish flag is running its multi-turn.
-  if (!game || game.movesAnimating() || finishTimer !== null) return;
-  const rect = $('board').getBoundingClientRect();
+  if (!game || game.movesAnimating() || finishTimer !== null) return;  const rect = $('board').getBoundingClientRect();
   const x = (ev.clientX - rect.left) * ($('board').width / rect.width / window.devicePixelRatio);
   const y = (ev.clientY - rect.top) * ($('board').height / rect.height / window.devicePixelRatio);
   const cell = renderer.cellAt(x, y);
@@ -271,7 +291,7 @@ async function startFromParams() {
     // The level takes its factory's chapter colour as its background.
     const res = generateLevel(seed, cfg, factoryColor);
     if (!res) return showMenu();
-    startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random' });
+    startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random', factory: factoryId || null });
     return;
   }
   if (params.has('draft')) {
@@ -478,6 +498,15 @@ async function openFactoryEditor() {
 
 document.addEventListener('DOMContentLoaded', () => {
   $('board').addEventListener('click', onBoardTap);
+  // Tap anywhere after a win on a factory level to play the next one
+  // from the same factory. Buttons and links keep their own actions
+  // (undo the win, restart, navigate away) — only taps on the board,
+  // the banner and the level strip advance.
+  $('playView').addEventListener('click', (ev) => {
+    if (!game || game.status !== 'won' || !currentMeta?.factory) return;
+    if (ev.target.closest('button, a, input, select, textarea')) return;
+    nextFactoryLevel();
+  });
   // Hints (MenuController.ShowHints): H key or the ? button shows the
   // level's hint markers; tapping one dismisses them (see onBoardTap).
   const showHints = () => {

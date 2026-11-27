@@ -106,7 +106,9 @@
 //     (~1.37x the cell), with a little pop — marks the previewed cell,
 //     while every empty cell gets a faint white hex outline (0.05-0.25
 //     alpha). The port shows all of that while a wall preview is up,
-//     until GO.
+//     until GO. Port polish (Sam, Nov 27): the empty-cell outlines
+//     fade with flood distance from the previewed cell, to nothing at
+//     6 steps — the board beyond the preview's neighbourhood stays dark.
 //   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
 //     Red (0.961, 0.478, 0.506) = #F57A81, Green (0.265, 0.840, 0.629)
 //     = #44D6A0, Brown (0.753, 0.576, 0.361) = #C0935C.
@@ -118,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=34';
-import { MOVE_MS } from './engine.js?v=34';
+import { T } from './types.js?v=35';
+import { MOVE_MS } from './engine.js?v=35';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -205,6 +207,20 @@ const SEGMENT_INTERVALS = [1.0, 1.2, 0.8, 1.4, 0.6, 1.6];
 // the board) — the zoom question there is still open.
 const MIN_FIT_COLS = 8;
 
+// Drag-overlay fade (port polish, not Unity — Sam, Nov 27): in preview
+// mode the faint white hex outlines fade with FLOOD distance from the
+// previewed cell (steps through the corridors, not as the crow flies),
+// to nothing at this distance. The number is the knob.
+const PREVIEW_FADE_DIST = 6;
+
+// Alpha of a drag-overlay hex at flood distance `d` from the previewed
+// cell: the closest cells keep the current 0.15, fading linearly to 0
+// at maxDist (distance 0 and 1 are both full — the previewed cell
+// itself is under the ghost hex anyway).
+export function previewOverlayAlpha(d, maxDist = PREVIEW_FADE_DIST) {
+  return 0.15 * (1 - Math.max(0, d - 1) / (maxDist - 1));
+}
+
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -220,6 +236,7 @@ export class Renderer {
     this.bgDark = 0; // 0 = level colour, 1 = darkened (preview mode)
     this.lastDraw = 0;
     this.previewAnim = null; // {key, start} for the ghost-hex pop
+    this.previewFade = null; // {key, dist} — flood distances from the previewed cell, for the overlay fade
     this.explosions = new Map(); // pickupFx id -> {x, y, base, flashMax, at, segs}
   }
 
@@ -345,6 +362,24 @@ export class Renderer {
     // toward the darkened colour over ~200ms, and back when the
     // preview clears. #4f6d82 -> #3f5768.
     const previewing = !!game.previewState;
+    // Flood distances from the previewed cell, for the drag-overlay
+    // fade below. Cached per preview cell — the terrain doesn't change
+    // while previewing, so the distances are stable until the preview
+    // moves to another cell.
+    let previewDist = null;
+    if (previewing) {
+      const { row, col } = game.previewState;
+      const key = `${row},${col}`;
+      if (!this.previewFade || this.previewFade.key !== key) {
+        const flooded = game.nav.flood([], { [T.WALL]: -1 }, row, col, PREVIEW_FADE_DIST);
+        const dist = new Map();
+        for (const f of flooded) dist.set(`${f.row},${f.col}`, f.distance);
+        this.previewFade = { key, dist };
+      }
+      previewDist = this.previewFade.dist;
+    } else {
+      this.previewFade = null;
+    }
     // White border around the edge of the board while previewing —
     // Sam's addition, not Unity's (Unity's preview is only the
     // per-cell outlines + ghost hex). Toggled here, where previewing
@@ -449,9 +484,18 @@ export class Renderer {
         // outline on every empty cell (ShowHexOverlay, 0.05-0.25 alpha).
         // The overlay is scale 1.9 against the 2.0 wall, so it sits
         // inset at 0.95s — its hairline gap is deliberate, not a bug.
+        // Port polish (Sam, Nov 27): the outlines fade with FLOOD
+        // distance from the previewed cell — the closest keep the
+        // current 0.15, fading to nothing at PREVIEW_FADE_DIST. Cells
+        // beyond it, or walled off from the previewed cell, get no
+        // outline at all.
         if (previewing && t === T.EMPTY && !game.items.has(`${r},${c}`)) {
+          const d = previewDist.get(`${r},${c}`);
+          if (d === undefined) continue;
+          const alpha = previewOverlayAlpha(d);
+          if (alpha <= 0) continue;
           this.hexPath(x, y, s * 0.95);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
