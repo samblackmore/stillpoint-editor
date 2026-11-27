@@ -1,0 +1,89 @@
+{
+ "id": "stage-4-ordered",
+ "name": "Stage 4 \u2014 Ordered Diamonds",
+ "chapter": "ORDERED DIAMONDS",
+ "theme": "Collect diamonds in a given order.",
+ "color": "#8F78AF",
+ "sourceLevels": [
+  "tut_3_1",
+  "tut_3_2",
+  "tut_3_3",
+  "tut_3_2_C"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 4,
+   "max": 5
+  },
+  "height": {
+   "min": 7,
+   "max": 8
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 2,
+   "max": 3,
+   "mustCollectAtLeast": 2,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": true
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "id": "stage-9-mix",
+ "name": "Stage 9 \u2014 Mix",
+ "chapter": "LURES & WAYPOINT MIX (ENEMY)",
+ "theme": "Lures + waypoints + enemy combined.",
+ "color": "#6577AE",
+ "sourceLevels": [
+  "tut_enemy_way_0",
+  "tut_enemy_way_00",
+  "tut_enemy_way_01",
+  "tut_enemy_way_000",
+  "tut_enemy_way_05",
+  "tut_enemy_way_3"
+ ],
+ "generatable": true,
+ "gaps": [
+  "Trap objective (TrapObjectives) is not in the port yet."
+ ],
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 5
+  },
+  "height": {
+   "min": 6,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 3
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 1,
+   "max": 1
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 1,
+   "max": 2,
+   "mustCollectAtLeast": 1,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 1,
+   "max": 3,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 1,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

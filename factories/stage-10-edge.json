@@ -1,0 +1,94 @@
+{
+ "id": "stage-10-edge",
+ "name": "Stage 10 \u2014 The Edge",
+ "chapter": "THE EDGE OF THE WORLD!",
+ "theme": "The Edge: border cells kill. No pins at all, edge-ringed big boards.",
+ "color": "#8167A6",
+ "sourceLevels": [
+  "tut_edge_4",
+  "tut_edge_5",
+  "tut_edge_6",
+  "tut_edge_1_1",
+  "tut_edge_1_2"
+ ],
+ "generatable": true,
+ "notes": [
+  "The chapter uses edge cells with zero pins; all four edges on is the port's closest match.",
+  "Width/height are the INNER grid — the four edge rows/columns add 2, so the finished board is 8–9 × 10–11 like the chapter's levels."
+ ],
+ "settings": {
+  "width": {
+   "min": 6,
+   "max": 7
+  },
+  "height": {
+   "min": 8,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 2
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 4,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 7,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": true,
+  "edgeTop": true,
+  "edgeLeft": true,
+  "edgeRight": true,
+  "orderObjective": false
+ }
+}

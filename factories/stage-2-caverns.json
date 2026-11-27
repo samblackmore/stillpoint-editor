@@ -1,0 +1,92 @@
+{
+ "id": "stage-2-caverns",
+ "name": "Stage 2 \u2014 Caverns",
+ "chapter": "THE CAVERNS - BUILD LIMIT",
+ "theme": "Build limit: pre-walled boards, diamonds with a cap on how many walls you may build.",
+ "color": "#555C9D",
+ "sourceLevels": [
+  "tut_0_build_0",
+  "tut_0_build_2",
+  "tut_0_build_1",
+  "tut_0_build_3"
+ ],
+ "generatable": true,
+ "gaps": [
+  "Generator can't pre-place 6\u201316 walls, and the port has no BuildWallsNoMoreThan objective yet."
+ ],
+ "settings": {
+  "width": {
+   "min": 4,
+   "max": 5
+  },
+  "height": {
+   "min": 7,
+   "max": 8
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 2,
+   "max": 3,
+   "mustCollectAtLeast": 2,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

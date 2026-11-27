@@ -1,0 +1,89 @@
+{
+ "id": "survival-2",
+ "name": "Survival 2",
+ "chapter": "Survival 2",
+ "theme": "Second survival (15 turns), tall board ringed with pins.",
+ "color": "#568E83",
+ "sourceLevels": [
+  "tut_6_2"
+ ],
+ "generatable": true,
+ "notes": [
+  "Unity bonus turns (30) have no analogue in the port."
+ ],
+ "settings": {
+  "width": {
+   "min": 7,
+   "max": 7
+  },
+  "height": {
+   "min": 9,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 15,
+   "max": 15
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

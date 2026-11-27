@@ -1,0 +1,91 @@
+{
+ "id": "stage-11-the-end",
+ "name": "Stage 11 \u2014 The End",
+ "chapter": "THE END",
+ "theme": "Finale maze: 21\u00d716, 282 walls, reach the OldTimer.",
+ "color": "#584C8E",
+ "sourceLevels": [
+  "tut_end_3"
+ ],
+ "generatable": false,
+ "gaps": [
+  "Not generatable: hand-made 21\u00d716 maze with 282 pre-placed walls.",
+  "OldTimer target (ReachOldTimer) is not in the port.",
+  "Fog and disableFinishFlag are not in the port."
+ ],
+ "settings": {
+  "width": {
+   "min": 21,
+   "max": 21
+  },
+  "height": {
+   "min": 16,
+   "max": 16
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

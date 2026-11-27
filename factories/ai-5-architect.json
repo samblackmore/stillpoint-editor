@@ -1,0 +1,90 @@
+{
+ "id": "ai-5-architect",
+ "name": "AI 5 \u2014 Architect",
+ "chapter": "AI: ARCHITECT",
+ "theme": "Largest AI boards, most pins, build from scratch.",
+ "color": "#8167A6",
+ "sourceLevels": [
+  "ai_5_1",
+  "ai_5_2",
+  "ai_5_3",
+  "ai_5_4",
+  "ai_5_5"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 5,
+   "max": 7
+  },
+  "height": {
+   "min": 5,
+   "max": 7
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 3,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

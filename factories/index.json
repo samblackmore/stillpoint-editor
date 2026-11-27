@@ -1,0 +1,104 @@
+{
+ "factories": [
+  {
+   "id": "stage-1-intro",
+   "name": "Stage 1 \u2014 Intro",
+   "file": "factories/stage-1-intro.json"
+  },
+  {
+   "id": "stage-2-caverns",
+   "name": "Stage 2 \u2014 Caverns",
+   "file": "factories/stage-2-caverns.json"
+  },
+  {
+   "id": "stage-3-waypoints",
+   "name": "Stage 3 \u2014 Waypoints",
+   "file": "factories/stage-3-waypoints.json"
+  },
+  {
+   "id": "stage-4-ordered",
+   "name": "Stage 4 \u2014 Ordered Diamonds",
+   "file": "factories/stage-4-ordered.json"
+  },
+  {
+   "id": "survival-1",
+   "name": "Survival 1",
+   "file": "factories/survival-1.json"
+  },
+  {
+   "id": "stage-5-lures",
+   "name": "Stage 5 \u2014 Lures",
+   "file": "factories/stage-5-lures.json"
+  },
+  {
+   "id": "survival-2",
+   "name": "Survival 2",
+   "file": "factories/survival-2.json"
+  },
+  {
+   "id": "stage-6-friends",
+   "name": "Stage 6 \u2014 Friends",
+   "file": "factories/stage-6-friends.json"
+  },
+  {
+   "id": "survival-3-lures",
+   "name": "Survival 3 \u2014 Lures",
+   "file": "factories/survival-3-lures.json"
+  },
+  {
+   "id": "stage-7-enemy",
+   "name": "Stage 7 \u2014 Enemy",
+   "file": "factories/stage-7-enemy.json"
+  },
+  {
+   "id": "stage-8-owners",
+   "name": "Stage 8 \u2014 Owners",
+   "file": "factories/stage-8-owners.json"
+  },
+  {
+   "id": "survival-4-friends",
+   "name": "Survival 4 \u2014 Friends",
+   "file": "factories/survival-4-friends.json"
+  },
+  {
+   "id": "stage-9-mix",
+   "name": "Stage 9 \u2014 Mix",
+   "file": "factories/stage-9-mix.json"
+  },
+  {
+   "id": "stage-10-edge",
+   "name": "Stage 10 \u2014 The Edge",
+   "file": "factories/stage-10-edge.json"
+  },
+  {
+   "id": "stage-11-the-end",
+   "name": "Stage 11 \u2014 The End",
+   "file": "factories/stage-11-the-end.json"
+  },
+  {
+   "id": "ai-1-first-steps",
+   "name": "AI 1 \u2014 First Steps",
+   "file": "factories/ai-1-first-steps.json"
+  },
+  {
+   "id": "ai-2-bottleneck",
+   "name": "AI 2 \u2014 Bottleneck",
+   "file": "factories/ai-2-bottleneck.json"
+  },
+  {
+   "id": "ai-3-diamond-harvest",
+   "name": "AI 3 \u2014 Diamond Harvest",
+   "file": "factories/ai-3-diamond-harvest.json"
+  },
+  {
+   "id": "ai-4-maze",
+   "name": "AI 4 \u2014 The Maze",
+   "file": "factories/ai-4-maze.json"
+  },
+  {
+   "id": "ai-5-architect",
+   "name": "AI 5 \u2014 Architect",
+   "file": "factories/ai-5-architect.json"
+  }
+ ]
+}

@@ -1,0 +1,90 @@
+{
+ "id": "ai-4-maze",
+ "name": "AI 4 \u2014 The Maze",
+ "chapter": "AI: THE MAZE",
+ "theme": "Wall-heavy small boards.",
+ "color": "#567AA1",
+ "sourceLevels": [
+  "ai_4_1",
+  "ai_4_2",
+  "ai_4_3",
+  "ai_4_4",
+  "ai_4_5"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 5
+  },
+  "height": {
+   "min": 5,
+   "max": 5
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Normal",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 1,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

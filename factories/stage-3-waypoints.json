@@ -1,0 +1,94 @@
+{
+ "id": "stage-3-waypoints",
+ "name": "Stage 3 \u2014 Waypoints",
+ "chapter": "WAYPOINTS",
+ "theme": "Route via endpoints: when a waypoint is in sight, a Drifter heads towards it instead of the Safe Zone.",
+ "color": "#567AA1",
+ "sourceLevels": [
+  "tut_2_r_0_2AA",
+  "tut_2_r_0_2A",
+  "tut_2_r_0_2B",
+  "tut_2_r_0_2",
+  "tut_2_r_0_1",
+  "tut_2_r_0_3"
+ ],
+ "generatable": true,
+ "notes": [
+  "Waypoints are endpoint cells (code 5) in Unity \u2014 code 7 is never used in any shipped level, so this factory emits endpoints, not code-7 cells."
+ ],
+ "settings": {
+  "width": {
+   "min": 4,
+   "max": 5
+  },
+  "height": {
+   "min": 7,
+   "max": 8
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 1,
+   "max": 3,
+   "mustCollectAtLeast": 1,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 1,
+   "max": 1,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

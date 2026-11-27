@@ -1,0 +1,93 @@
+{
+ "id": "stage-7-enemy",
+ "name": "Stage 7 \u2014 Enemy",
+ "chapter": "ENEMY",
+ "theme": "First Reds: trap the enemy by blocking its path.",
+ "color": "#6F70AC",
+ "sourceLevels": [
+  "tut_enemy_1",
+  "tut_enemy_2",
+  "tut_enemy_4",
+  "tut_enemy_5",
+  "tut_enemy_6"
+ ],
+ "generatable": true,
+ "gaps": [
+  "Trap objective (TrapObjectives) is not in the port yet."
+ ],
+ "settings": {
+  "width": {
+   "min": 5,
+   "max": 6
+  },
+  "height": {
+   "min": 7,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 1,
+   "max": 1
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 1,
+   "max": 2,
+   "mustCollectAtLeast": 1,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 1,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

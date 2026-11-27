@@ -1,0 +1,90 @@
+{
+ "id": "ai-2-bottleneck",
+ "name": "AI 2 \u2014 Bottleneck",
+ "chapter": "AI: BOTTLENECK",
+ "theme": "Small boards with a few walls forcing routing.",
+ "color": "#555C9D",
+ "sourceLevels": [
+  "ai_2_1",
+  "ai_2_2",
+  "ai_2_3",
+  "ai_2_4",
+  "ai_2_5"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 5
+  },
+  "height": {
+   "min": 4,
+   "max": 5
+  },
+  "wallSeedCount": {
+   "min": 2,
+   "max": 4
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

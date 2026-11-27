@@ -1,0 +1,93 @@
+{
+ "id": "ai-1-first-steps",
+ "name": "AI 1 \u2014 First Steps",
+ "chapter": "AI: FIRST STEPS",
+ "theme": "Tiny intro boards, diamonds optional.",
+ "color": "#5F869F",
+ "sourceLevels": [
+  "ai_1_1",
+  "ai_1_2",
+  "ai_1_3",
+  "ai_1_4",
+  "ai_1_5"
+ ],
+ "generatable": true,
+ "notes": [
+  "AI campaign is retired in Unity (toggle hardcoded off, Oct 9 2026) but its levels ship in the port's menu."
+ ],
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 5
+  },
+  "height": {
+   "min": 4,
+   "max": 5
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

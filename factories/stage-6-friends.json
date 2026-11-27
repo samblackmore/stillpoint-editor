@@ -1,0 +1,98 @@
+{
+ "id": "stage-6-friends",
+ "name": "Stage 6 \u2014 Friends",
+ "chapter": "Friends",
+ "theme": "Second player (Alice + Barbara); owner diamonds and ordered diamonds.",
+ "color": "#567AA1",
+ "sourceLevels": [
+  "tut_2p_0_diamond",
+  "tut_2p_1_diamond",
+  "tut_2p_0",
+  "tut_2p_1",
+  "tut_2p_2",
+  "tut_2p_3",
+  "tut_2p_4"
+ ],
+ "generatable": true,
+ "gaps": [
+  "Owner-diamond objective (CollectOrderIsOwner) is not in the port yet."
+ ],
+ "notes": [
+  "The first three levels are kitchen-sink debug levels with all ten objectives at once \u2014 the factory follows the clean levels (tut_2p_0, tut_2p_2)."
+ ],
+ "settings": {
+  "width": {
+   "min": 4,
+   "max": 6
+  },
+  "height": {
+   "min": 6,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 2,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 3,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 1,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": true
+ }
+}

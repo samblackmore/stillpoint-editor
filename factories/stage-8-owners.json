@@ -1,0 +1,93 @@
+{
+ "id": "stage-8-owners",
+ "name": "Stage 8 \u2014 Owners",
+ "chapter": "WAYPOINTS (2 PLAYER) & OWNER DIAMONDS",
+ "theme": "2 players + owner diamonds, wall-heavy boards.",
+ "color": "#576BAB",
+ "sourceLevels": [
+  "tut_owners_0",
+  "tut_owners_05",
+  "tut_owners_3",
+  "tut_2_r_0_1C"
+ ],
+ "generatable": true,
+ "gaps": [
+  "Owner-diamond objective (CollectOrderIsOwner) is not in the port yet.",
+  "7\u201313 pre-placed walls are not generatable."
+ ],
+ "settings": {
+  "width": {
+   "min": 4,
+   "max": 5
+  },
+  "height": {
+   "min": 7,
+   "max": 8
+  },
+  "wallSeedCount": {
+   "min": 3,
+   "max": 5
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 2,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 1,
+   "max": 2,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": true
+ }
+}

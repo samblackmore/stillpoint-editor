@@ -1,0 +1,90 @@
+{
+ "id": "stage-5-lures",
+ "name": "Stage 5 \u2014 Lures",
+ "chapter": "LURES",
+ "theme": "Lures: just like waypoints \u2014 except you really don't want to touch them.",
+ "color": "#7676B0",
+ "sourceLevels": [
+  "tut_2_r_0_6_A",
+  "tut_2_r_0_6_C",
+  "tut_2_r_0_7",
+  "tut_2_r_0_6",
+  "tut_2_r_2"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 7
+  },
+  "height": {
+   "min": 8,
+   "max": 9
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 3
+  },
+  "wallDensity": "Sparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 1,
+   "max": 3,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 0,
+   "max": 5,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}

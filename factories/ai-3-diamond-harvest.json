@@ -1,0 +1,90 @@
+{
+ "id": "ai-3-diamond-harvest",
+ "name": "AI 3 \u2014 Diamond Harvest",
+ "chapter": "AI: DIAMOND HARVEST",
+ "theme": "Diamonds 2\u20133, collect-focused.",
+ "color": "#8F78AF",
+ "sourceLevels": [
+  "ai_3_1",
+  "ai_3_2",
+  "ai_3_3",
+  "ai_3_4",
+  "ai_3_5"
+ ],
+ "generatable": true,
+ "settings": {
+  "width": {
+   "min": 3,
+   "max": 5
+  },
+  "height": {
+   "min": 5,
+   "max": 5
+  },
+  "wallSeedCount": {
+   "min": 0,
+   "max": 2
+  },
+  "wallDensity": "VerySparse",
+  "playerCount": 1,
+  "enemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy6Count": {
+   "min": 0,
+   "max": 0
+  },
+  "bombEnemy9Count": {
+   "min": 0,
+   "max": 0
+  },
+  "pullEnemyCount": {
+   "min": 0,
+   "max": 0
+  },
+  "diggerCount": {
+   "min": 0,
+   "max": 0
+  },
+  "floodCount": {
+   "min": 0,
+   "max": 0
+  },
+  "endPoints": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "lures": {
+   "min": 0,
+   "max": 0,
+   "mustCollectAtLeast": 0,
+   "canCollectNoMoreThan": 0
+  },
+  "collectables": {
+   "min": 2,
+   "max": 3,
+   "mustCollectAtLeast": 2,
+   "canCollectNoMoreThan": 0
+  },
+  "snow": {
+   "min": 0,
+   "max": 0
+  },
+  "survivalTurnCount": {
+   "min": 0,
+   "max": 0
+  },
+  "edgeBottom": false,
+  "edgeTop": false,
+  "edgeLeft": false,
+  "edgeRight": false,
+  "orderObjective": false
+ }
+}
