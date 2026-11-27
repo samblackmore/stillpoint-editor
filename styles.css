@@ -81,8 +81,22 @@ header.top p {
   font-size: 14px;
 }
 
-.top-nav a { color: var(--ink); text-decoration: none; }
+.top-nav a { color: var(--ink); text-decoration: none; position: relative; padding-bottom: 8px; }
 .top-nav a:hover { color: var(--accent-dark); }
+/* The active tab gets a little dot underneath it (Sam, Nov 27) — the
+   menu is home, so no tab carries it there. currentColor is the link
+   colour, dark blue on both header themes. */
+.top-nav a.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
 .top-nav span { color: var(--muted); }
 
 /* White header: dark-blue text, the "· html" in a deeper gold so it

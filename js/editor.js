@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=38';
-import { Game } from './engine.js?v=38';
-import { Renderer } from './render.js?v=38';
-import { parseLevel, serializeLevel } from './levels.js?v=38';
+import { T } from './types.js?v=39';
+import { Game } from './engine.js?v=39';
+import { Renderer } from './render.js?v=39';
+import { parseLevel, serializeLevel } from './levels.js?v=39';
 
 const $ = (id) => document.getElementById(id);
 
@@ -120,6 +120,21 @@ function resizeGrid() {
 document.addEventListener('DOMContentLoaded', () => {
   buildPalette();
   render();
+  // Header colour toggle (white / player yellow), remembered across
+  // visits — the same switch as the game and factories pages.
+  const THEME_KEY = 'stillpoint-header-theme';
+  const header = $('siteHeader');
+  const applyTheme = (theme) => {
+    header.classList.toggle('theme-white', theme === 'white');
+    header.classList.toggle('theme-yellow', theme === 'yellow');
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
+  };
+  $('themeToggle').addEventListener('click', () => {
+    applyTheme(header.classList.contains('theme-white') ? 'yellow' : 'white');
+  });
+  let savedTheme = 'white';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'white'; } catch { /* private mode */ }
+  applyTheme(savedTheme === 'yellow' ? 'yellow' : 'white');
   $('board').addEventListener('click', paintAt);
   $('gridW').addEventListener('change', resizeGrid);
   $('gridH').addEventListener('change', resizeGrid);

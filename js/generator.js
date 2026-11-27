@@ -7,9 +7,9 @@
 // around the seeds. Everything else is placed by rejection sampling with
 // minimum-separation rules (LayoutCells), retrying the whole level up to
 // 100 times when a placement fails.
-import { T } from './types.js?v=38';
-import { RNG } from './rng.js?v=38';
-import { Nav, ORIENTATION } from './nav.js?v=38';
+import { T } from './types.js?v=39';
+import { RNG } from './rng.js?v=39';
+import { Nav, ORIENTATION } from './nav.js?v=39';
 
 const DENSITY = { VerySparse: 1.5, Sparse: 1.3, Normal: 1, Dense: 0.75 };
 
@@ -324,12 +324,45 @@ function shuffledRange(rng, size) {
   return out;
 }
 
+// Unity's RNG.RandomChapterColor (Scripts/Tools/RNG.cs): a random colour
+// from the same HSV band the chapter colours live in — hue 0.4–0.9
+// (cyan through magenta), saturation 0.3–0.5, value 0.5–0.7. Unity's
+// LevelFactory keeps this as a commented-out alternative to the chapter
+// colour (Color = RNG.RandomChapterColor()); the port uses it for
+// generated levels with no factory, so a Random level (and the daily)
+// gets a fresh chapter-style colour instead of the default blue.
+export function randomChapterColor(rng) {
+  const h = rng.rangeFloat(0.4, 0.9);
+  const s = rng.rangeFloat(0.3, 0.5);
+  const v = rng.rangeFloat(0.5, 0.7);
+  return hsvToHex(h, s, v);
+}
+
+function hsvToHex(h, s, v) {
+  // Standard HSV -> RGB, all components in [0, 1].
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [
+    [v, t, p], [q, v, p], [p, v, t],
+    [p, q, v], [t, p, v], [v, p, q],
+  ][i % 6];
+  const to255 = (x) => Math.round(x * 255).toString(16).padStart(2, '0');
+  return `#${to255(r)}${to255(g)}${to255(b)}`;
+}
+
 // Generate a level from a seed string/number and a config.
 // `color` is the level's background colour (a factory's chapter colour);
-// without one the level renders in the default blue. Returns
-// { level, seed } or null after 100 failed attempts.
+// without one the level gets Unity's random chapter colour (above).
+// Returns { level, seed } or null after 100 failed attempts.
 export function generateLevel(seed, config = DEFAULT_CONFIG, color = null) {
   const rng = new RNG(seed);
+  // The colour is drawn from a colour-only RNG derived from the seed,
+  // so it is fixed per seed and the layout stream is untouched — a
+  // daily keeps its layout, only its background colour changes.
+  const levelColor = color || randomChapterColor(new RNG(`${seed}-color`));
   // Diggers and bombs are disabled for now (Sam, Nov 27 — neither
   // mechanic was ever settled in Unity). The counts are forced to zero
   // here, after the factory settings are merged in, so no factory or
@@ -344,7 +377,7 @@ export function generateLevel(seed, config = DEFAULT_CONFIG, color = null) {
     bombEnemy9Count: { min: 0, max: 0 },
   };
   for (let attempt = 0; attempt < 100; attempt++) {
-    const level = tryGenerate(rng, cfg, color);
+    const level = tryGenerate(rng, cfg, levelColor);
     if (level) return { level, seed };
   }
   return null;

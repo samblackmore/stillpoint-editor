@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=38';
-import { Renderer } from './render.js?v=38';
-import { parseLevel } from './levels.js?v=38';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=38';
+import { Game } from './engine.js?v=39';
+import { Renderer } from './render.js?v=39';
+import { parseLevel } from './levels.js?v=39';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=39';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -37,9 +37,28 @@ function showMenu() {
   $('playView').style.display = 'none';
   if (rafId) cancelAnimationFrame(rafId);
   document.title = 'Stillpoint — HTML prototype';
-  // Back to the default blue in the phone browser chrome.
+  // Back to the default blue in the phone browser chrome and the page.
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) metaTheme.content = '#4f6d82';
+  setPageBg('#4f6d82');
+  setActiveNav(null);
+}
+
+// The header nav shows which tab you're on: a dot under the active
+// link (Sam, Nov 27). The menu is home — no tab is active there, so
+// `kind` is null and every link loses the dot.
+function setActiveNav(kind) {
+  for (const a of document.querySelectorAll('.top-nav a')) {
+    a.classList.toggle('active', a.dataset.nav === kind);
+  }
+}
+
+// The page background follows the level's own background colour, so the
+// whole document — the menu flash on load, the overscroll on a phone,
+// any margin around the board — matches the board instead of staying
+// the default blue. Reset by showMenu.
+function setPageBg(color) {
+  document.documentElement.style.setProperty('--bg', color);
 }
 
 function showPlay() {
@@ -65,6 +84,10 @@ function startLevel(def, meta) {
   // The phone browser chrome matches the level's background colour.
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) metaTheme.content = def.color || '#4f6d82';
+  // So does the page background, and the nav dot follows the level:
+  // Daily / Random for those, Editor for an editor-draft playtest.
+  setPageBg(def.color || '#4f6d82');
+  setActiveNav(meta.kind === 'draft' ? 'editor' : meta.kind);
   $('levelName').textContent = meta.name;
   $('statusBanner').className = 'banner';
   $('statusBanner').textContent = '';

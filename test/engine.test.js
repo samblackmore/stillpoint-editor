@@ -166,7 +166,9 @@ test('generated survival levels are ringed with edge, not pins', () => {
 test('generated levels carry their factory colour', () => {
   const { level } = generateLevel('colour-test', DEFAULT_CONFIG, '#6F70AC');
   assert.equal(level.color, '#6F70AC');
-  assert.equal(generateLevel('colour-test-2').level.color, null);
+  // Without a factory, Unity's random chapter colour fills in (v39) —
+  // never null. (The HSV ranges are asserted in the v39 test below.)
+  assert.match(generateLevel('colour-test-2').level.color, /^#[0-9a-f]{6}$/);
 });
 
 test('generated levels load and play', () => {
@@ -576,4 +578,59 @@ test('app.js defines the local helpers it calls', () => {
       `app.js calls ${name} but does not define it`);
     assert.ok(src.includes(`${name}(`), `app.js never calls ${name}`);
   }
+});
+
+// ---------- random chapter colour + header nav (v39) ----------
+
+function hexToHsv(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  let h = 0;
+  if (d > 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+    if (h < 0) h += 1;
+  }
+  return { h, s: max === 0 ? 0 : d / max, v: max };
+}
+
+test('generated levels with no factory get Unity\'s random chapter colour', () => {
+  // Unity's RNG.RandomChapterColor: hue 0.4-0.9, sat 0.3-0.5, val 0.5-0.7.
+  const a = generateLevel('color-1', DEFAULT_CONFIG);
+  const b = generateLevel('color-1', DEFAULT_CONFIG);
+  assert.ok(a && b);
+  assert.match(a.level.color, /^#[0-9a-f]{6}$/);
+  assert.equal(a.level.color, b.level.color, 'same seed, same colour');
+  const { h, s, v } = hexToHsv(a.level.color);
+  assert.ok(h >= 0.4 && h <= 0.9, `hue ${h} in Unity range`);
+  assert.ok(s >= 0.3 && s <= 0.5, `sat ${s} in Unity range`);
+  assert.ok(v >= 0.5 && v <= 0.7, `val ${v} in Unity range`);
+  // A factory colour still wins, and the colour never disturbs the layout:
+  // the same seed generates the same grid with or without a colour.
+  const withFactory = generateLevel('color-1', DEFAULT_CONFIG, '#6F70AC');
+  assert.equal(withFactory.level.color, '#6F70AC');
+  assert.deepEqual(withFactory.level.grid, a.level.grid);
+});
+
+test('the header nav is on every page and marks the active tab', () => {
+  // The nav (Daily · Random · Editor · Factories) is the same on all
+  // three pages; the active tab carries a dot (see styles.css).
+  for (const page of ['index.html', 'factories.html', 'editor.html']) {
+    const html = readFileSync(path.join(ROOT, page), 'utf8');
+    for (const tab of ['daily', 'random', 'editor', 'factories']) {
+      assert.ok(html.includes(`data-nav="${tab}"`), `${page} nav has a ${tab} link`);
+    }
+  }
+  const editorHtml = readFileSync(path.join(ROOT, 'editor.html'), 'utf8');
+  assert.ok(editorHtml.includes('data-nav="editor" class="active"'), 'editor marks its own tab');
+  const factoriesHtml = readFileSync(path.join(ROOT, 'factories.html'), 'utf8');
+  assert.ok(factoriesHtml.includes('data-nav="factories" class="active"'), 'factories marks its own tab');
+  const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.ok(css.includes('.top-nav a.active::after'), 'the dot rule exists');
 });
