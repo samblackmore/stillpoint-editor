@@ -36,18 +36,28 @@ body {
   font-family: "Optimistic AI VF", system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.45;
+  /* The game screen fills the viewport: header on top, the rest is game. */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
 }
 
 a { color: var(--accent-dark); }
 
+/* Site header: a full-width bar above the game (or the menu), in the
+   game's own colours — "Stillpoint · html" as before, then one-word
+   links to the pages, separated by bullets. The header is the one part
+   of the page that isn't the game blue, so its background is switchable
+   (white / player yellow) with the little toggle on the right. */
 header.top {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 28px 20px 8px;
+  padding: 12px 20px;
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(15, 30, 40, 0.15);
 }
 
 header.top h1 {
@@ -64,11 +74,72 @@ header.top p {
   font-size: 14px;
 }
 
+.top-nav {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 14px;
+}
+
+.top-nav a { color: var(--ink); text-decoration: none; }
+.top-nav a:hover { color: var(--accent-dark); }
+.top-nav span { color: var(--muted); }
+
+/* White header: dark-blue text, the "· html" in a deeper gold so it
+   still reads on white. */
+header.top.theme-white { background: #fff; }
+header.top.theme-white h1 { color: #3f5666; }
+header.top.theme-white h1 span { color: #d9a400; }
+header.top.theme-white .top-nav a { color: #3f5666; }
+header.top.theme-white .top-nav a:hover { color: #d9a400; }
+header.top.theme-white .top-nav span { color: rgba(63, 86, 102, 0.5); }
+
+/* Yellow header: the player yellow as the background, dark blue for
+   everything on it — the yellow IS the accent here. */
+header.top.theme-yellow { background: var(--accent); }
+header.top.theme-yellow h1 { color: #3f5666; }
+header.top.theme-yellow h1 span { color: #3f5666; }
+header.top.theme-yellow .top-nav a { color: #3f5666; }
+header.top.theme-yellow .top-nav a:hover { text-decoration: underline; }
+header.top.theme-yellow .top-nav span { color: rgba(63, 86, 102, 0.55); }
+
+/* The header-colour toggle: a little split white/yellow swatch. */
+.theme-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.theme-swatch {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff 50%, #ffc700 50%);
+  border: 1px solid rgba(63, 86, 102, 0.45);
+}
+
 main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#menuView {
   max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   padding: 12px 20px 60px;
+  overflow-y: auto;
 }
+
+#menuView .intro { color: var(--muted); font-size: 14px; margin: 6px 0 16px; }
+#menuView .foot { color: var(--muted); font-size: 13px; margin: 24px 0 0; }
 
 .card {
   background: var(--card);
@@ -151,20 +222,23 @@ input[type="text"], input[type="number"], select {
   color: #fff;
 }
 
-/* Play view */
-#playView { display: none; }
-
-.play-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+/* Play view: the game fills the whole viewport below the header — a
+   slim level-name strip, then the board takes the rest. No card, no
+   footer, no drop shadow: the board IS the screen. (The editor keeps
+   its card and its shadow; only the play view goes full-bleed.) */
+#playView {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
 }
 
-.play-head h2 { margin: 0; font-size: 21px; }
-.play-head .turn { color: var(--muted); font-size: 14px; }
+.play-head {
+  padding: 8px 20px 10px;
+  flex-shrink: 0;
+}
+
+.play-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
 
 .board-wrap {
   background: var(--board-bg);
@@ -178,6 +252,20 @@ input[type="text"], input[type="number"], select {
      lifts off the page with a soft drop shadow instead of a border. */
   box-shadow: 0 2px 6px rgba(15, 30, 40, 0.3), 0 16px 40px rgba(15, 30, 40, 0.45);
   transition: box-shadow 0.2s ease;
+}
+
+/* In the play view the board fills the viewport, so there is no shadow
+   to lift it off anything and no rounded corners — the white preview
+   ring is just the ring, on its own. */
+#playView .board-wrap {
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#playView .board-wrap.previewing {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
 }
 
 /* While a wall preview is up, a white border rings the edge of the
@@ -300,21 +388,23 @@ canvas#board {
 }
 
 .banner {
+  /* Win/lose announcement, centred over the board (it only shows when
+     the game is over, so it can sit on top of the game). */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
   border-radius: 12px;
   padding: 14px 16px;
-  margin-bottom: 12px;
+  margin: 0;
+  max-width: min(420px, 80%);
+  text-align: center;
   font-weight: 600;
   display: none;
 }
 .banner.win { display: block; background: rgba(68, 214, 160, 0.16); color: #8ff5cf; }
 .banner.lose { display: block; background: rgba(245, 122, 129, 0.16); color: #ffb3b8; }
 
+/* Still used by the editor's help line under its board. */
 .hint-text { font-size: 13px; color: var(--muted); margin-top: 8px; }
-
-footer.foot {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 0 20px 40px;
-  color: var(--muted);
-  font-size: 13px;
-}

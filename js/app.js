@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=24';
-import { Renderer } from './render.js?v=24';
-import { parseLevel, loadLevelFile } from './levels.js?v=24';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=24';
+import { Game } from './engine.js?v=25';
+import { Renderer } from './render.js?v=25';
+import { parseLevel, loadLevelFile } from './levels.js?v=25';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=25';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -31,7 +31,7 @@ function showMenu() {
 
 function showPlay() {
   $('menuView').style.display = 'none';
-  $('playView').style.display = 'block';
+  $('playView').style.display = 'flex';
   document.title = `${currentMeta?.name || 'Level'} — Stillpoint`;
 }
 
@@ -95,10 +95,13 @@ function startLevel(def, meta) {
 }
 
 function layoutBoard() {
+  // The board fills the play view below the header, so size it from the
+  // board-wrap's actual box (not a fixed cap) — it grows and shrinks
+  // with the viewport.
   const canvas = $('board');
   const wrap = canvas.parentElement;
-  const availW = Math.min(wrap.clientWidth, 780);
-  const availH = Math.min(window.innerHeight - 260, 640);
+  const availW = wrap.clientWidth;
+  const availH = wrap.clientHeight;
   renderer = new Renderer(canvas);
   renderer.layout(game, Math.max(320, availW), Math.max(320, availH));
 }
@@ -270,10 +273,22 @@ document.addEventListener('DOMContentLoaded', () => {
   $('restartBtn').addEventListener('click', () => {
     if (game) startLevel(game.def, currentMeta);
   });
-  $('closeBtn').addEventListener('click', () => {
-    history.pushState(null, '', location.pathname);
-    startFromParams();
+  // Header colour toggle (white / player yellow), remembered across
+  // visits. No close button on the game screen any more — the header
+  // nav and the browser back button cover going back.
+  const THEME_KEY = 'stillpoint-header-theme';
+  const header = $('siteHeader');
+  const applyTheme = (theme) => {
+    header.classList.toggle('theme-white', theme === 'white');
+    header.classList.toggle('theme-yellow', theme === 'yellow');
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
+  };
+  $('themeToggle').addEventListener('click', () => {
+    applyTheme(header.classList.contains('theme-white') ? 'yellow' : 'white');
   });
+  let savedTheme = 'white';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'white'; } catch { /* private mode */ }
+  applyTheme(savedTheme === 'yellow' ? 'yellow' : 'white');
   $('randomBtn').addEventListener('click', () => {
     const seed = $('randomSeed').value.trim() || String(Math.floor(Math.random() * 1e9));
     location.search = `?random&seed=${encodeURIComponent(seed)}`;

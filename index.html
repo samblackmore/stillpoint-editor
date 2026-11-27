@@ -5,16 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
-<header class="top">
+<header class="top theme-white" id="siteHeader">
   <h1>Stillpoint <span>· html</span></h1>
-  <p>A browser prototype of the Stillpoint puzzle — same levels, same pathfinding, no Unity build.</p>
+  <nav class="top-nav" aria-label="Pages">
+    <a href="?daily">Daily</a><span aria-hidden="true">·</span>
+    <a href="?random">Random</a><span aria-hidden="true">·</span>
+    <a href="./">Levels</a><span aria-hidden="true">·</span>
+    <a href="editor.html">Editor</a>
+  </nav>
+  <button class="theme-toggle" id="themeToggle" title="Switch header colour (white / yellow)" aria-label="Switch header colour"><span class="theme-swatch" aria-hidden="true"></span></button>
 </header>
 
 <main>
   <section id="menuView">
+    <p class="intro">A browser prototype of the Stillpoint puzzle — same levels, same pathfinding, no Unity build.</p>
     <div class="card">
       <h2>Daily puzzle</h2>
       <p>One generated level per day, same for everyone. Today's seed is <strong id="dailySeed">…</strong>.</p>
@@ -35,10 +42,14 @@
 
     <div class="card">
       <h2>Levels</h2>
-      <p>Hand-made levels from the Unity game, loaded as JSON from the repo. Tap a cell to preview a wall, tap it again to place it — every character's path updates live.</p>
+      <p>Hand-made levels from the Unity game, loaded as JSON from the repo. Tap a cell to preview a wall, tap it again to place it — every character's path updates live. Tap GO, or tap the same cell again, to place it. Tap a wall to preview removing it.</p>
       <div class="level-list" id="levelList"></div>
       <p class="small">Want to make one? <a href="editor.html">Open the level editor</a> — it exports the same JSON format.</p>
     </div>
+
+    <p class="foot">Stillpoint HTML prototype — a port for fast prototyping and playtesting.
+    Rules ported from the Unity game (pathfinding, turn flow, generator);
+    abilities, flood and fog are not ported yet — see README.</p>
   </section>
 
   <section id="playView">
@@ -55,25 +66,15 @@
       <div class="hud-buttons">
         <button class="round-btn" id="hintBtn" title="Show hints (H)" aria-label="Show hints">?</button>
         <button class="round-btn" id="undoBtn" title="Undo turn" aria-label="Undo turn">↩</button>
-        <button class="round-btn" id="closeBtn" title="Back to levels" aria-label="Back to levels">✕</button>
+        <button class="round-btn" id="stepBtn" title="Step forward" aria-label="Step forward">▶</button>
+        <button class="round-btn" id="restartBtn" title="Restart level" aria-label="Restart level">↻</button>
       </div>
       <button class="go-btn" id="goBtn" title="Place the previewed wall">GO</button>
-    </div>
-    <div class="banner" id="statusBanner"></div>
-    <p class="hint-text">Tap a cell to preview a wall there — the piggy and enemies show where they'd go. Tap GO, or tap the same cell again, to place it. Tap a wall to preview removing it.</p>
-    <div class="btn-row">
-      <button class="btn" id="stepBtn">▶ Step forward</button>
-      <button class="btn" id="restartBtn">↻ Restart</button>
+      <div class="banner" id="statusBanner"></div>
     </div>
   </section>
 </main>
 
-<footer class="foot">
-  Stillpoint HTML prototype — a port for fast prototyping and playtesting.
-  Rules ported from the Unity game (pathfinding, turn flow, generator);
-  abilities, flood and fog are not ported yet — see README.
-</footer>
-
-<script type="module" src="js/app.js?v=24"></script>
+<script type="module" src="js/app.js?v=25"></script>
 </body>
 </html>
