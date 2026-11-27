@@ -2,13 +2,15 @@
 
 A browser prototype of Stillpoint (the Unity puzzle game in
 `escape-piggy-island`), for fast prototyping and playtesting: no Unity
-build, just open the page. Same levels, same pathfinding, same turn flow.
+build, just open the page. Same pathfinding, same turn flow. Daily,
+random, factories and editor only — the hand-made campaign levels are
+not shipped here (they live in the Unity repo).
 
 Play it: GitHub Pages serves `index.html` from `main`.
 
 ## What's in here
 
-- `index.html` — the game: level select, daily puzzle, random levels.
+- `index.html` — the game: daily puzzle, random levels.
 - `editor.html` — a basic level editor that exports the same JSON the game
   (and Unity) loads.
 - `js/` — the port. No framework, no build step, plain ES modules:
@@ -27,9 +29,6 @@ Play it: GitHub Pages serves `index.html` from `main`.
   - `render.js` — canvas hex renderer (pointy-top hexes, odd-r layout).
   - `levels.js` — level JSON parsing (including the wrapped LevelMeta
     shape some files use).
-- `levels/store/` — all 231 hand-made and AI level JSONs copied from the
-  Unity repo, as-is. `levels/index.json` lists the curated, verified
-  playable set shown in the menu.
 - `generator-config.json` — the generator's ranges (width, wall seeds,
   enemy counts, …). Tune it without touching code.
 
@@ -106,12 +105,11 @@ forward plays turns with no wall until the level ends.
 - `tut_0_0_B` ("Collect the diamond") appears unwinnable under the
   ported rules — the piggy reaches a pin in two turns no matter what wall
   is placed first, and the diamond sits south of it, off every shortest
-  path to a pin. It stays in `levels/store/` but out of the menu until
-  the rule behind it is understood (it may be broken in Unity too).
-- `tut_3_A` has no player at all (a pins-only board, likely a template).
+  path to a pin. It is kept as an inline test fixture until the rule
+  behind it is understood (it may be broken in Unity too).
 
 ## Tests
 
 `npm test` (or `node --test test/`) runs headless checks: nav parity on
-known boards, generator determinism per seed, every stored level loads,
-and scripted playthroughs of the tutorial levels.
+known boards, generator determinism per seed, generated levels loading,
+and scripted playthroughs of inlined tutorial levels.

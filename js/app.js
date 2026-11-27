@@ -1,9 +1,9 @@
-// App wiring for index.html: menu (level list, daily, random), play view,
+// App wiring for index.html: menu (daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=36';
-import { Renderer } from './render.js?v=36';
-import { parseLevel, loadLevelFile } from './levels.js?v=36';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=36';
+import { Game } from './engine.js?v=37';
+import { Renderer } from './render.js?v=37';
+import { parseLevel } from './levels.js?v=37';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=37';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -42,36 +42,10 @@ function showPlay() {
   document.title = `${currentMeta?.name || 'Level'} — Stillpoint`;
 }
 
-async function loadIndex() {
-  try {
-    const res = await fetch('levels/index.json');
-    return await res.json();
-  } catch {
-    return { levels: [] };
-  }
-}
-
-function renderMenu(index) {
-  const list = $('levelList');
-  list.innerHTML = '';
-  for (const lvl of index.levels) {
-    const el = document.createElement('a');
-    el.className = 'level-item' + (done.has(lvl.id) ? ' done' : '');
-    el.href = `?level=${encodeURIComponent(lvl.id)}`;
-    const b = best[lvl.id];
-    el.innerHTML = `<div class="name">${escapeHtml(lvl.name)}</div>
-      <div class="meta">${escapeHtml(lvl.group || '')}${b ? ` · best ${b} moves` : ''}</div>`;
-    list.appendChild(el);
-  }
+function renderMenu() {
   const today = dailySeed();
   $('dailySeed').textContent = today;
   $('dailyLink').href = `?daily=${today}`;
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[c]);
 }
 
 // ---- Play ----
@@ -268,8 +242,7 @@ function onBoardTap(ev) {
 
 async function startFromParams() {
   const params = new URLSearchParams(location.search);
-  const index = await loadIndex();
-  renderMenu(index);
+  renderMenu();
 
   if (params.has('daily')) {
     const seed = params.get('daily') || dailySeed();
@@ -302,16 +275,6 @@ async function startFromParams() {
     const raw = localStorage.getItem('stillpoint-editor-draft');
     if (!raw) return showMenu();
     startLevel(parseLevel(JSON.parse(raw)), { id: 'draft', name: 'Editor draft (playtest)', kind: 'draft' });
-    return;
-  }
-  if (params.has('level')) {
-    const id = params.get('level');
-    const entry = index.levels.find((l) => l.id === id);
-    if (!entry) return showMenu();
-    const def = await loadLevelFile(entry.file);
-    def.id = entry.id;
-    def.name = entry.name;
-    startLevel(def, { id: entry.id, name: entry.name, kind: 'level' });
     return;
   }
   showMenu();

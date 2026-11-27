@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=36">
+<link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 <header class="top theme-white" id="siteHeader">
@@ -13,7 +13,6 @@
   <nav class="top-nav" aria-label="Pages">
     <a href="?daily">Daily</a><span aria-hidden="true">·</span>
     <a href="?random">Random</a><span aria-hidden="true">·</span>
-    <a href="./">Levels</a><span aria-hidden="true">·</span>
     <a href="editor.html">Editor</a><span aria-hidden="true">·</span>
     <a href="factories.html">Factories</a>
   </nav>
@@ -22,7 +21,7 @@
 
 <main>
   <section id="menuView">
-    <p class="intro">A browser prototype of the Stillpoint puzzle — same levels, same pathfinding, no Unity build.</p>
+    <p class="intro">A browser prototype of the Stillpoint puzzle — same pathfinding, same turn flow, no Unity build. Tap a cell to preview a wall, tap it again to place it. Tap the 🏁 flag to fast-forward turns until the piggy reaches a waypoint or the safe zone.</p>
     <div class="card">
       <h2>Daily puzzle</h2>
       <p>One generated level per day, same for everyone. Today's seed is <strong id="dailySeed">…</strong>.</p>
@@ -67,13 +66,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Levels</h2>
-      <p>Hand-made levels from the Unity game, loaded as JSON from the repo. Tap a cell to preview a wall, tap it again to place it — every character's path updates live. Tap a wall to preview removing it. Tap the 🏁 flag to fast-forward turns until the piggy reaches a waypoint or a pin.</p>
-      <div class="level-list" id="levelList"></div>
-      <p class="small">Want to make one? <a href="editor.html">Open the level editor</a> — it exports the same JSON format.</p>
-    </div>
-
     <p class="foot">Stillpoint HTML prototype — a port for fast prototyping and playtesting.
     Rules ported from the Unity game (pathfinding, turn flow, generator);
     abilities, flood and fog are not ported yet — see README.</p>
@@ -102,6 +94,6 @@
   </section>
 </main>
 
-<script type="module" src="js/app.js?v=36"></script>
+<script type="module" src="js/app.js?v=37"></script>
 </body>
 </html>

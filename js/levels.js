@@ -61,12 +61,6 @@ function normalizeObjectives(o) {
   return normalized;
 }
 
-export async function loadLevelFile(path) {
-  const res = await fetch(path);
-  if (!res.ok) throw new Error(`Could not load ${path} (${res.status})`);
-  return parseLevel(await res.json());
-}
-
 export function serializeLevel(def) {
   return {
     grid: def.grid.map((row) => row.join(' ')),

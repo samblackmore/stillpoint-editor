@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=36';
-import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=36';
+import { T } from './types.js?v=37';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=37';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -413,7 +413,7 @@ export class Renderer {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
         const color = CHAR_COLORS[ch.kind] || '#888';
-        const path = this.pathFor(game, ch) || [];
+        const path = this.drawPathFor(game, ch, wallNow);
         path.forEach((step, i) => {
           const key = `${step.row},${step.col}`;
           if (pathTargets.has(key)) return;
@@ -529,7 +529,7 @@ export class Renderer {
     if (showPaths) {
       for (const ch of game.chars) {
         if (!ch.alive || ch.finished) continue;
-        const path = this.pathFor(game, ch);
+        const path = this.drawPathFor(game, ch, wallNow);
         if (!path || path.length === 0) {
           this.pathAnims.delete(ch.id);
           continue;
@@ -728,6 +728,21 @@ export class Renderer {
   pathFor(game, ch) {
     if (game.previewState && game.previewState.paths) return game.previewState.paths.get(ch.id) || [];
     return ch.path;
+  }
+
+  // The path as drawn: while a character slides to its next cell, the
+  // point for that cell was already consumed by the engine (the logical
+  // state advances at once) — but it shouldn't disappear until the
+  // character reaches it, or the ribbon snaps away as the move begins
+  // (Sam, Nov 27). So while the slide is running, the destination cell
+  // (the character's logical cell) is put back at the front of the
+  // drawn path. Once the slide snaps (MOVE_SNAP), isSliding goes false
+  // and the point drops — exactly when the character arrives. `now` is
+  // a Date.now() clock, the same one movePlanAt uses.
+  drawPathFor(game, ch, now) {
+    const path = this.pathFor(game, ch) || [];
+    if (!this.isSliding(game, ch, now)) return path;
+    return [{ row: ch.row, col: ch.col }, ...path];
   }
 
   // Visual position of a character: during its step slide it glides from

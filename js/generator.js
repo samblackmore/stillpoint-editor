@@ -7,9 +7,9 @@
 // around the seeds. Everything else is placed by rejection sampling with
 // minimum-separation rules (LayoutCells), retrying the whole level up to
 // 100 times when a placement fails.
-import { T } from './types.js?v=36';
-import { RNG } from './rng.js?v=36';
-import { Nav, ORIENTATION } from './nav.js?v=36';
+import { T } from './types.js?v=37';
+import { RNG } from './rng.js?v=37';
+import { Nav, ORIENTATION } from './nav.js?v=37';
 
 const DENSITY = { VerySparse: 1.5, Sparse: 1.3, Normal: 1, Dense: 0.75 };
 
@@ -182,7 +182,7 @@ function tryGenerate(rng, cfg, color) {
   } else {
     // Pins: the bottom row (JSON row 0) is the piggy's destination — in
     // the hand-made levels it's a full row of pin rings along the bottom
-    // edge of the screen, and ReachEdge ("Pin every piggy") is the
+    // edge of the screen, and ReachEdge ("reach safe zone") is the
     // ending on 207 of 231 of them. Placed after the walls and the edge
     // border, so the pin row overwrites walls there (as in the hand-made
     // levels, where the pin row is clear) but never edge cells — with
@@ -296,7 +296,7 @@ function tryGenerate(rng, cfg, color) {
     });
   }
 
-  // ReachEdge ("Pin every piggy") is the ending whenever the level has
+  // ReachEdge ("reach safe zone") is the ending whenever the level has
   // pins — which is everywhere except survival mode, where there are no
   // pins to reach and the only objective is surviving. It sits alongside
   // the collect objectives on 207 of 231 hand-made levels: you collect
@@ -330,8 +330,21 @@ function shuffledRange(rng, size) {
 // { level, seed } or null after 100 failed attempts.
 export function generateLevel(seed, config = DEFAULT_CONFIG, color = null) {
   const rng = new RNG(seed);
+  // Diggers and bombs are disabled for now (Sam, Nov 27 — neither
+  // mechanic was ever settled in Unity). The counts are forced to zero
+  // here, after the factory settings are merged in, so no factory or
+  // the Default config can spawn one. The code stays — the layout
+  // calls below, the character kinds, the editor tools — so either
+  // mechanic can be revived by deleting this override.
+  const cfg = {
+    ...config,
+    diggerCount: { min: 0, max: 0 },
+    bombEnemyCount: { min: 0, max: 0 },
+    bombEnemy6Count: { min: 0, max: 0 },
+    bombEnemy9Count: { min: 0, max: 0 },
+  };
   for (let attempt = 0; attempt < 100; attempt++) {
-    const level = tryGenerate(rng, config, color);
+    const level = tryGenerate(rng, cfg, color);
     if (level) return { level, seed };
   }
   return null;

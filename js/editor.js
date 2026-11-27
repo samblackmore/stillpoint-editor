@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=36';
-import { Game } from './engine.js?v=36';
-import { Renderer } from './render.js?v=36';
-import { parseLevel, serializeLevel } from './levels.js?v=36';
+import { T } from './types.js?v=37';
+import { Game } from './engine.js?v=37';
+import { Renderer } from './render.js?v=37';
+import { parseLevel, serializeLevel } from './levels.js?v=37';
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,8 +13,10 @@ const TOOLS = [
   { type: T.WALL, label: 'Wall', swatch: '#3d405b' },
   { type: T.PLAYER, label: 'Piggy (player)', swatch: '#e5989b' },
   { type: T.ENEMY, label: 'Enemy', swatch: '#6d6875' },
-  { type: T.BOMB, label: 'Bomb enemy', swatch: '#22223b' },
-  { type: T.DIGGER, label: 'Digger', swatch: '#8a6d4b' },
+  // Bomb enemy and Digger are disabled for now (Sam, Nov 27 — neither
+  // mechanic was ever settled in Unity), so they have no tool here.
+  // The kinds, rendering and engine rules stay, so either can be
+  // revived by re-adding its line below.
   { type: T.ENDPOINT, label: 'Endpoint', swatch: '#70a83b' },
   { type: T.WAYPOINT, label: 'Waypoint', swatch: '#ffbe00' },
   { type: T.COLLECTABLE, label: 'Diamond', swatch: '#e9a319' },

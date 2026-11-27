@@ -2,9 +2,6 @@
 // Run: node --test test/  (or npm test)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
 import { Game, MOVE_MS, MOVE_SNAP_MS } from '../js/engine.js';
@@ -12,12 +9,39 @@ import { Renderer, previewOverlayAlpha } from '../js/render.js';
 import { parseLevel } from '../js/levels.js';
 import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url)) + '/..';
-const STORE = path.join(ROOT, 'levels/store');
-
-function loadStoreLevel(file) {
-  return parseLevel(JSON.parse(readFileSync(path.join(STORE, file), 'utf8')));
-}
+// The hand-made campaign levels used to live in levels/store/; the repo
+// no longer ships them (Nov 27 — it focuses on daily, random,
+// factories and editor), so the few levels the tests still need are
+// inlined here, copied from the Unity JSONs they came from.
+const TUT_0_0 = {
+  grid: ['18 18 18', '0 0 0', '0 0 0', '0 0 0', '0 3 0', '0 0 0'],
+  objectives: {}, disableStepForward: true, hidePathOnStart: true,
+};
+const TUT_0_0_1 = {
+  grid: ['18 18 18 18', '0 0 0 0', '0 0 0 0', '0 0 1 0', '0 0 0 0', '0 0 0 0', '0 0 3 0'],
+  objectives: { BuildWallsNoMoreThan: 3, ReachEdge: true },
+};
+const TUT_0_0_B = {
+  grid: ['18 18 18 18', '0 0 0 0', '0 0 0 3', '0 0 0 0', '0 13 0 0', '0 0 0 0'],
+  objectives: { CollectItemObjectives: [{ ItemType: 13, CollectAtLeast: 1 }], ReachEdge: true },
+};
+const AI_1_4 = {
+  grid: ['0 18 0', '0 0 0', '0 0 0', '3 0 0'],
+  objectives: { ReachEdge: true },
+};
+const AI_1_5 = {
+  grid: ['18 18 18 18 18', '0 0 0 0 0', '0 13 0 13 0', '0 0 0 0 0', '0 0 3 0 0'],
+  objectives: { CollectItemObjectives: [{ ItemType: 13, CollectAtLeast: 2 }], ReachEdge: true },
+};
+// The five survival-only boards (edge-ringed, no pins).
+const SURVIVAL_OBJECTIVES = { SurvivalTurnCount: 5, CollectItemObjectives: [], ZoomObjectives: [] };
+const SURVIVAL_LEVELS = [
+  { name: 'level0', grid: ['14 14 14 14 14 14 14 14 14', '14 0 1 0 0 0 1 0 14', '14 0 1 1 0 0 0 1 14', '14 0 0 0 0 1 1 0 14', '14 1 0 1 0 0 0 0 14', '14 0 0 1 3 1 0 1 14', '14 0 0 0 0 0 0 1 14', '14 1 1 0 0 0 0 0 14', '14 0 0 0 0 0 0 1 14', '14 14 14 14 14 14 14 14 14'] },
+  { name: 'level1', grid: ['14 14 14 14 14 14 14 14 14', '14 0 1 1 0 0 0 0 14', '14 0 1 1 0 0 0 0 14', '14 1 0 0 0 0 0 0 14', '14 1 0 0 0 3 0 1 14', '14 1 0 1 0 0 1 0 14', '14 0 0 0 0 0 0 1 14', '14 0 0 0 1 1 1 0 14', '14 0 0 0 0 0 0 1 14', '14 1 0 0 1 0 0 0 14', '14 14 14 14 14 14 14 14 14'] },
+  { name: 'level3', grid: ['14 14 14 14 14 14 14 14 14', '14 0 0 0 0 1 0 1 14', '14 0 0 1 0 0 0 0 14', '14 0 0 0 1 0 0 0 14', '14 1 1 1 0 0 0 0 14', '14 0 1 1 3 1 0 0 14', '14 0 0 1 0 0 0 0 14', '14 0 0 0 0 0 0 0 14', '14 0 0 1 0 0 0 0 14', '14 14 14 14 14 14 14 14 14'] },
+  { name: 'level5', grid: ['14 14 14 14 14 14 14 14 14', '14 1 0 0 1 0 1 0 14', '14 0 0 0 1 0 1 0 14', '14 0 0 1 1 1 1 0 14', '14 0 1 0 0 0 0 0 14', '14 1 0 3 0 0 0 0 14', '14 1 0 0 0 0 0 0 14', '14 1 0 0 0 1 1 0 14', '14 1 0 1 0 0 1 1 14', '14 14 14 14 14 14 14 14 14'] },
+  { name: 'break_tut', grid: ['14 14 14 14 14 14 14 14 14', '14 0 0 1 0 1 0 0 14', '14 0 1 1 1 1 1 0 14', '14 0 1 1 13 1 1 0 14', '14 1 1 1 0 1 1 0 14', '14 1 3 0 0 0 0 0 14', '14 0 1 1 0 0 0 0 14', '14 0 1 1 1 0 0 0 14', '14 0 0 0 0 0 0 0 14', '14 0 0 0 0 0 0 0 14', '14 14 14 14 14 14 14 14 14'] },
+];
 
 // ---------- nav ----------
 
@@ -102,7 +126,7 @@ test('generated levels always load and have a player', () => {
   }
 });
 
-test('generated levels have a pin row and pin-every-piggy', () => {
+test('generated levels have a pin row and a reach-the-safe-zone ending', () => {
   // Every hand-made level ends on a row of pin rings along the bottom
   // edge (JSON row 0), with ReachEdge sitting alongside the collect
   // objectives — generated levels were missing both, so the piggy had
@@ -140,18 +164,31 @@ test('generated levels carry their factory colour', () => {
   assert.equal(generateLevel('colour-test-2').level.color, null);
 });
 
-// ---------- level store ----------
-
-test('every stored level loads and builds a game', () => {
-  const files = readdirSync(STORE).filter((f) => f.endsWith('.json'));
-  assert.ok(files.length > 200, `expected 200+ levels, got ${files.length}`);
-  // tut_3_A.json is a pins-only board with no player (a template in the
-  // Unity repo); every other level must have one.
-  for (const f of files) {
-    const game = new Game().loadLevel(loadStoreLevel(f));
-    if (f === 'tut_3_A.json') continue;
-    assert.ok(game.players().length >= 1, `${f}: no player`);
+test('generated levels load and play', () => {
+  for (const seed of ['load-1', 'load-2', 'load-3']) {
+    const res = generateLevel(seed, DEFAULT_CONFIG, null);
+    assert.ok(res, `seed ${seed} should generate`);
+    const game = new Game().loadLevel(res.level);
+    assert.ok(game.players().length >= 1, `seed ${seed}: no player`);
     assert.equal(game.status, 'playing');
+  }
+});
+
+test('diggers and bombs never spawn, even when the config asks for them', () => {
+  // Diggers and bombs are disabled in generateLevel (Sam, Nov 27);
+  // a config that asks for several of each must still produce none.
+  const cfg = { ...DEFAULT_CONFIG,
+    diggerCount: { min: 2, max: 2 },
+    bombEnemyCount: { min: 2, max: 2 },
+    bombEnemy6Count: { min: 1, max: 1 },
+    bombEnemy9Count: { min: 1, max: 1 },
+  };
+  for (const seed of ['no-dig-1', 'no-dig-2', 'no-dig-3']) {
+    const res = generateLevel(seed, cfg, null);
+    assert.ok(res, `seed ${seed} should generate`);
+    const game = new Game().loadLevel(res.level);
+    assert.ok(!game.chars.some((c) => c.kind === 'digger' || c.kind === 'bomb'),
+      `seed ${seed}: no diggers or bombs`);
   }
 });
 
@@ -214,7 +251,7 @@ function solve(game, { maxDepth = 10, maxNodes = 300000 } = {}) {
   return dfs(0);
 }
 
-test('levels with no objectives default to pin-every-piggy', () => {
+test('levels with no objectives default to reach-the-safe-zone', () => {
   // Unity's tutorial controller adds an edge objective to levels whose JSON
   // carries none; without the default, "all objectives complete" is true
   // of an empty list and the level is won after a single turn.
@@ -227,7 +264,7 @@ test('levels with no objectives default to pin-every-piggy', () => {
 });
 
 test('tutorial: first steps is won by walking to the pin', () => {
-  const game = new Game().loadLevel(loadStoreLevel('tut_0_0.json'));
+  const game = new Game().loadLevel(parseLevel(TUT_0_0));
   // Step-forward is disabled in this tutorial level, so every turn places
   // a wall somewhere harmless while the piggy walks to the pin.
   let guard = 0;
@@ -250,7 +287,7 @@ test('tutorial: first steps is won by walking to the pin', () => {
 });
 
 test('tutorial: build sparingly needs exactly three walls and a pin', () => {
-  const game = new Game().loadLevel(loadStoreLevel('tut_0_0_1.json'));
+  const game = new Game().loadLevel(parseLevel(TUT_0_0_1));
   assert.equal(solve(game, { maxDepth: 10 }), true);
 });
 
@@ -258,21 +295,21 @@ test('tutorial: collect the diamond, then pin', () => {
   // tut_0_0_B appears unwinnable under the ported rules (and, by the same
   // rules, in Unity): the piggy reaches a pin in two turns no matter what
   // wall is placed first, and the diamond sits south of it, off every
-  // shortest path to a pin. It stays in the store but out of the menu
-  // until the rule behind it is understood.
-  const game = new Game().loadLevel(loadStoreLevel('tut_0_0_B.json'));
+  // shortest path to a pin. Kept as an inline fixture until the rule
+  // behind it is understood.
+  const game = new Game().loadLevel(parseLevel(TUT_0_0_B));
   assert.equal(solve(game, { maxDepth: 10 }), false);
 });
 
 test('survival levels are winnable', () => {
-  for (const f of ['level0.json', 'level1.json', 'level3.json', 'level5.json', 'break_tut.json']) {
-    const game = new Game().loadLevel(loadStoreLevel(f));
-    assert.equal(solve(game, { maxDepth: 8 }), true, `${f} should be winnable`);
+  for (const { name, grid } of SURVIVAL_LEVELS) {
+    const game = new Game().loadLevel(parseLevel({ grid, objectives: SURVIVAL_OBJECTIVES }));
+    assert.equal(solve(game, { maxDepth: 8 }), true, `${name} should be winnable`);
   }
 });
 
 test('rewind restores the previous state', () => {
-  const game = new Game().loadLevel(loadStoreLevel('level0.json'));
+  const game = new Game().loadLevel(parseLevel({ grid: SURVIVAL_LEVELS[0].grid, objectives: SURVIVAL_OBJECTIVES }));
   const before = game.snapshot();
   // Build any wall, then rewind.
   outer: for (let r = 0; r < game.height; r++) {
@@ -307,7 +344,7 @@ function runFlag(game) {
 }
 
 test('no-animation turns jump with no move plan', () => {
-  const game = new Game().loadLevel(loadStoreLevel('ai_1_4.json'));
+  const game = new Game().loadLevel(parseLevel(AI_1_4));
   const next = game.players()[0].path[0];
   assert.equal(game.stepForward({ animate: false }), true);
   assert.equal(game.movePlan.length, 0);
@@ -345,7 +382,7 @@ test('the flag loop stops at a waypoint', () => {
 });
 
 test('the flag loop stops at a pin and wins', () => {
-  const game = new Game().loadLevel(loadStoreLevel('ai_1_4.json'));
+  const game = new Game().loadLevel(parseLevel(AI_1_4));
   assert.equal(runFlag(game), 3);
   assert.equal(game.status, 'won');
   assert.equal(game.turnEvents.pin, true);
@@ -355,7 +392,7 @@ test('the flag works where step-forward is disabled', () => {
   // tut_0_0 disables the step button, but Unity's flag calls
   // CommitTurn directly — the piggy walks to the pin in 4 turns and
   // wins, instead of the flag spinning 100 turns doing nothing.
-  const game = new Game().loadLevel(loadStoreLevel('tut_0_0.json'));
+  const game = new Game().loadLevel(parseLevel(TUT_0_0));
   assert.equal(game.stepForward({ animate: false }), false);
   assert.equal(runFlag(game), 4);
   assert.equal(game.status, 'won');
@@ -377,7 +414,7 @@ function contentWidth(renderer, cols) {
 
 test('portrait: a 5-wide level looks small (8-cell default zoom)', () => {
   const renderer = stubRenderer();
-  const game = new Game().loadLevel(loadStoreLevel('ai_1_5.json')); // 5x5
+  const game = new Game().loadLevel(parseLevel(AI_1_5)); // 5x5
   renderer.layout(game, 390, 700);
   // The 8-cell reference width is 578px at the base size, so the scale
   // is 390/578 and the 5-wide content is ~65% of the screen, centred.
@@ -390,14 +427,14 @@ test('portrait: a 5-wide level looks small (8-cell default zoom)', () => {
 
 test('portrait: a 9-wide level still fills the screen', () => {
   const renderer = stubRenderer();
-  const game = new Game().loadLevel(loadStoreLevel('level0.json')); // 9x10
+  const game = new Game().loadLevel(parseLevel({ grid: SURVIVAL_LEVELS[0].grid, objectives: SURVIVAL_OBJECTIVES })); // 9x10
   renderer.layout(game, 390, 700);
   assert.ok(Math.abs(contentWidth(renderer, 9) / 390 - 1) < 0.02);
 });
 
 test('landscape: the old fit behaviour is unchanged', () => {
   const renderer = stubRenderer();
-  const game = new Game().loadLevel(loadStoreLevel('ai_1_5.json')); // 5x5
+  const game = new Game().loadLevel(parseLevel(AI_1_5)); // 5x5
   renderer.layout(game, 800, 400);
   // No 8-cell reference in landscape: the 1.4x cap binds, as before.
   assert.ok(Math.abs(renderer.size - 34 * 1.4) < 0.01);
@@ -481,4 +518,42 @@ test('a player does not route to a lure along the pin row', () => {
   // to reach something else.
   const through = p.path.slice(0, -1);
   assert.ok(!through.some((s) => game.terrain[s.row][s.col] === T.PIN));
+});
+
+// ---------- path point stays until arrival (v37) ----------
+
+test('the path point stays drawn until the character reaches it', () => {
+  const renderer = stubRenderer();
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  renderer.layout(game, 390, 700);
+  const ch = game.players()[0];
+  // Before the step the path runs to the endpoint only — the piggy
+  // re-paths to the pin after collecting it.
+  assert.deepEqual(renderer.drawPathFor(game, ch, Date.now()).map((s) => [s.row, s.col]), [[1, 1]]);
+  game.stepForward(); // animated: the piggy slides onto the endpoint
+  const t0 = game.movePlanAt;
+  // The engine consumed the endpoint point and re-pathed to the pin,
+  // but while the slide runs the drawn path still starts with it.
+  assert.deepEqual(ch.path.map((s) => [s.row, s.col]), [[0, 1]]);
+  assert.deepEqual(renderer.drawPathFor(game, ch, t0 + 300).map((s) => [s.row, s.col]), [[1, 1], [0, 1]]);
+  // Once the slide snaps, the point is gone — the piggy has arrived.
+  assert.deepEqual(renderer.drawPathFor(game, ch, t0 + MOVE_SNAP_MS).map((s) => [s.row, s.col]), [[0, 1]]);
+});
+
+// ---------- objective text (v37) ----------
+
+test('the edge objective reads like Unity: reach the safe zone', () => {
+  // Unity's ObjectivesBox text for ReachEdge is "reach safe zone" —
+  // the pins are the safe zone, and the win screen calls the players
+  // "Drifters safe". Not "pin every piggy".
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 5 0', '0 3 0'],
+    objectives: {},
+  }));
+  const edge = game.objectiveList().find((o) => o.id === 'edge');
+  assert.equal(edge.label, 'Reach the safe zone');
+  assert.equal(edge.progress, '0/1 safe');
 });
