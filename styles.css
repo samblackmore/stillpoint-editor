@@ -255,17 +255,22 @@ input[type="text"], input[type="number"], select {
 }
 
 /* In the play view the board fills the viewport, so there is no shadow
-   to lift it off anything and no rounded corners — the white preview
-   ring is just the ring, on its own. */
+   to lift it off anything and no rounded corners — and the white preview
+   ring is an outline drawn just INSIDE the board's edges (a box-shadow
+   ring would sit outside the viewport and be invisible on three sides,
+   and an inset shadow would hide under the canvas). */
 #playView .board-wrap {
   flex: 1;
   min-height: 0;
   border-radius: 0;
   box-shadow: none;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 0.2s ease;
 }
 
 #playView .board-wrap.previewing {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+  outline-color: rgba(255, 255, 255, 0.65);
 }
 
 /* While a wall preview is up, a white border rings the edge of the

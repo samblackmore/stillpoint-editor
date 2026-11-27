@@ -7,9 +7,9 @@
 // around the seeds. Everything else is placed by rejection sampling with
 // minimum-separation rules (LayoutCells), retrying the whole level up to
 // 100 times when a placement fails.
-import { T } from './types.js?v=25';
-import { RNG } from './rng.js?v=25';
-import { Nav, ORIENTATION } from './nav.js?v=25';
+import { T } from './types.js?v=26';
+import { RNG } from './rng.js?v=26';
+import { Nav, ORIENTATION } from './nav.js?v=26';
 
 const DENSITY = { VerySparse: 1.5, Sparse: 1.3, Normal: 1, Dense: 0.75 };
 
