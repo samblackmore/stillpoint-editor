@@ -293,11 +293,12 @@ test('rewind restores the previous state', () => {
 
 // The app's flag loop, minus the 100ms timer: take no-animation turns
 // until the game ends, a waypoint is collected, a pin is reached, or
-// 100 turns pass (Unity's CommitTurnsUntilWinOrLose).
+// 100 turns pass (Unity's CommitTurnsUntilWinOrLose). `force` mirrors
+// the app: the flag works even where step-forward is disabled.
 function runFlag(game) {
   let turns = 0;
   while (game.status === 'playing' && turns < 100) {
-    game.stepForward({ animate: false });
+    if (!game.stepForward({ animate: false, force: true })) break;
     turns++;
     if (game.turnEvents.endpoint || game.turnEvents.pin) break;
   }
@@ -347,4 +348,14 @@ test('the flag loop stops at a pin and wins', () => {
   assert.equal(runFlag(game), 3);
   assert.equal(game.status, 'won');
   assert.equal(game.turnEvents.pin, true);
+});
+
+test('the flag works where step-forward is disabled', () => {
+  // tut_0_0 disables the step button, but Unity's flag calls
+  // CommitTurn directly — the piggy walks to the pin in 4 turns and
+  // wins, instead of the flag spinning 100 turns doing nothing.
+  const game = new Game().loadLevel(loadStoreLevel('tut_0_0.json'));
+  assert.equal(game.stepForward({ animate: false }), false);
+  assert.equal(runFlag(game), 4);
+  assert.equal(game.status, 'won');
 });

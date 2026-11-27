@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=32';
-import { Nav, ORIENTATION } from './nav.js?v=32';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=33';
+import { Nav, ORIENTATION } from './nav.js?v=33';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -306,9 +306,13 @@ export class Game {
   }
 
   // One turn with no wall change (the step-forward button).
-  stepForward({ animate = true } = {}) {
+  // `force` is for the finish flag: Unity's flag calls CommitTurn
+  // directly, so it works even on levels where the step-forward button
+  // is disabled (tut_0_0) — the flag must not spin 100 turns doing
+  // nothing there.
+  stepForward({ animate = true, force = false } = {}) {
     if (this.status !== 'playing') return false;
-    if (this.def.disableStepForward) return false;
+    if (this.def.disableStepForward && !force) return false;
     this.history.push(this.snapshot());
     this.turn++;
     this.advanceTurn({ animate });

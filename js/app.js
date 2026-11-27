@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=32';
-import { Renderer } from './render.js?v=32';
-import { parseLevel, loadLevelFile } from './levels.js?v=32';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=32';
+import { Game } from './engine.js?v=33';
+import { Renderer } from './render.js?v=33';
+import { parseLevel, loadLevelFile } from './levels.js?v=33';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=33';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -208,10 +208,10 @@ function startFinishFlag() {
   const tick = () => {
     finishTimer = null;
     if (!game || game.status !== 'playing') { updateHUD(); return; }
-    game.stepForward({ animate: false });
+    const took = game.stepForward({ animate: false, force: true });
     turns++;
     updateHUD();
-    if (game.status !== 'playing' || game.turnEvents.endpoint || game.turnEvents.pin || turns >= MAX_TURNS) return;
+    if (!took || game.status !== 'playing' || game.turnEvents.endpoint || game.turnEvents.pin || turns >= MAX_TURNS) return;
     finishTimer = setTimeout(tick, 100);
   };
   finishTimer = setTimeout(tick, 100);
