@@ -187,6 +187,44 @@ main {
 
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
+/* Factory editor (Random card): a small link-styled toggle opens a grid
+   of the factory's settings. Saved edits live in localStorage and apply
+   to every level generated from that factory. */
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-dark);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#factoryEditor h3 { margin: 14px 0 2px; font-size: 16px; }
+#factoryEditor h3 .tag-edited {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--board-dark);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+
+.factory-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+
+.factory-form .field { font-size: 13px; }
+.factory-form .field > label { display: block; color: var(--muted); margin-bottom: 3px; }
+.factory-form .field input[type="number"] { width: 56px; }
+.factory-form .field .range { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.factory-form .field .range label { color: rgba(255, 255, 255, 0.85); }
+
 /* Level list */
 .level-list {
   display: grid;

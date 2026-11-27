@@ -58,3 +58,27 @@ set where the chapter's levels actually require collecting that many.
 The JSON files are the source of truth — edit them directly. To check a
 change, generate a few levels from the factory and confirm the sizes and
 counts land in range (the 2026-11-27 check ran 5 seeds per factory).
+
+### Editing in the browser
+
+The Random level card on the menu has a factory picker (Default + all 20
+factories + any custom ones) and an "edit it" toggle that opens a form
+for the factory's settings: size, wall seeds/density, players, enemies,
+endpoints/lures/diamonds (with must-collect), survival turns, order
+objective, edge border.
+
+- **Save factory** stores the edited settings in localStorage (an
+  override keyed by factory id) — every level generated from that
+  factory from then on uses your settings, and the picker marks it
+  "(edited)". **Reset to shipped** clears the override.
+- **Save as new…** copies the factory into "My factories" under a name
+  you choose. Custom factories are stored whole in localStorage; Reset
+  on one deletes it.
+- **Download JSON** downloads the factory doc (metadata + settings).
+  Commit the file to `factories/` to ship it — the browser can't write
+  to the repo itself.
+
+Generating with a factory puts it in the URL (`?random&seed=…&factory=<id>`),
+so a generated level is shareable along with the factory that made it.
+Custom factories in a shared link only work on a browser that has that
+custom factory saved.

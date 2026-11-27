@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 <header class="top theme-white" id="siteHeader">
@@ -34,10 +34,36 @@
       <h2>Random level</h2>
       <p>Generate a level from a seed — share the seed to share the level.</p>
       <div class="btn-row">
+        <select id="factorySelect" aria-label="Factory"></select>
         <input type="text" id="randomSeed" placeholder="seed (blank = random)" size="24">
         <button class="btn primary" id="randomBtn">Generate</button>
       </div>
-      <p class="small">The generator is a port of the Unity LevelFactory; the config lives in <code>generator-config.json</code>.</p>
+      <p class="small">The generator is a port of the Unity LevelFactory. Factories are per-chapter presets in <code>factories/</code> — pick one above, or <button class="link-btn" id="editFactoryBtn" type="button">edit it</button>.</p>
+      <div id="factoryEditor" hidden>
+        <h3 id="factoryEditName">Factory</h3>
+        <p class="small" id="factoryEditTheme"></p>
+        <div class="factory-form">
+          <div class="field"><label>Width</label><span class="range"><input type="number" id="fWidthMin" min="3" max="21"> – <input type="number" id="fWidthMax" min="3" max="21"></span></div>
+          <div class="field"><label>Height</label><span class="range"><input type="number" id="fHeightMin" min="3" max="16"> – <input type="number" id="fHeightMax" min="3" max="16"></span></div>
+          <div class="field"><label>Wall seeds</label><span class="range"><input type="number" id="fSeedsMin" min="0" max="9"> – <input type="number" id="fSeedsMax" min="0" max="9"></span></div>
+          <div class="field"><label>Wall density</label><select id="fDensity"><option>VerySparse</option><option>Sparse</option><option>Normal</option><option>Dense</option></select></div>
+          <div class="field"><label>Players</label><input type="number" id="fPlayers" min="1" max="2"></div>
+          <div class="field"><label>Enemies</label><span class="range"><input type="number" id="fEnemyMin" min="0" max="4"> – <input type="number" id="fEnemyMax" min="0" max="4"></span></div>
+          <div class="field"><label>Endpoints (must collect)</label><span class="range"><input type="number" id="fEndMin" min="0" max="4"> – <input type="number" id="fEndMax" min="0" max="4"> ≥ <input type="number" id="fEndMust" min="0" max="4"></span></div>
+          <div class="field"><label>Lures</label><span class="range"><input type="number" id="fLureMin" min="0" max="7"> – <input type="number" id="fLureMax" min="0" max="7"></span></div>
+          <div class="field"><label>Diamonds (must collect)</label><span class="range"><input type="number" id="fDiamMin" min="0" max="5"> – <input type="number" id="fDiamMax" min="0" max="5"> ≥ <input type="number" id="fDiamMust" min="0" max="5"></span></div>
+          <div class="field"><label>Survival turns</label><span class="range"><input type="number" id="fSurvMin" min="0" max="30"> – <input type="number" id="fSurvMax" min="0" max="30"></span></div>
+          <div class="field"><label><input type="checkbox" id="fOrder"> Collect in order</label></div>
+          <div class="field"><label>Edge border</label><span class="range"><label><input type="checkbox" id="fEdgeTop"> top</label><label><input type="checkbox" id="fEdgeBottom"> bottom</label><label><input type="checkbox" id="fEdgeLeft"> left</label><label><input type="checkbox" id="fEdgeRight"> right</label></span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="factorySaveBtn">Save factory</button>
+          <button class="btn" id="factorySaveAsBtn">Save as new…</button>
+          <button class="btn" id="factoryResetBtn">Reset to shipped</button>
+          <button class="btn" id="factoryDownloadBtn">Download JSON</button>
+        </div>
+        <p class="small" id="factoryEditStatus"></p>
+      </div>
     </div>
 
     <div class="card">
@@ -75,6 +101,6 @@
   </section>
 </main>
 
-<script type="module" src="js/app.js?v=26"></script>
+<script type="module" src="js/app.js?v=28"></script>
 </body>
 </html>
