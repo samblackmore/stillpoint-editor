@@ -118,8 +118,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=30';
-import { MOVE_MS } from './engine.js?v=30';
+import { T } from './types.js?v=31';
+import { MOVE_MS } from './engine.js?v=31';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -519,7 +519,13 @@ export class Renderer {
             grad.addColorStop(1 / n, hexA(color, 0.3));
             grad.addColorStop((n - 1) / n, hexA(color, 0.3));
           }
-          grad.addColorStop(1, hexA(color, n > 1 ? 0 : 1));
+          // The far end always fades to 0 — even on a 1-cell path. The
+          // old `n > 1 ? 0 : 1` kept the last segment at full alpha, so
+          // a piggy one cell from its destination showed a solid bar
+          // instead of a fading ribbon (Sam, Nov 27). Unity's gradient
+          // is 1.0 at the character fading to 0 at the far end whatever
+          // the length; the destination ring (below) still marks the end.
+          grad.addColorStop(1, hexA(color, 0));
           ctx.strokeStyle = grad;
           ctx.globalAlpha = ribbonP;
           ctx.lineWidth = s * 1.1;
