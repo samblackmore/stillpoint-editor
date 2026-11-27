@@ -429,8 +429,8 @@ canvas#board {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Unity-style HUD overlaid on the board: objectives panel top-left,
-   round undo/close buttons top-right, big GO button bottom-right. */
+/* HUD overlaid on the board: objectives panel top-left, small hint /
+   restart buttons top-right. The main buttons live in the bottom bar. */
 .hud-objectives {
   position: absolute;
   top: 12px;
@@ -474,24 +474,60 @@ canvas#board {
   gap: 10px;
 }
 
-.round-btn {
-  width: 44px;
-  height: 44px;
+/* Unity's game buttons: a bottom bar (GameButtons in MainGame.unity,
+   100px above the bottom edge) with three 100x100 buttons — Rewind on
+   the left, Finish flag in the centre, Skip on the right. The hint (and
+   the port's restart, kept at Sam's word) stay top-right, small, the
+   way Unity's 50x50 hint button sits up there. The bar is a flex child
+   of the play view, so the board shrinks to sit above it instead of
+   hiding under it — the pins live on the bottom row. */
+.game-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 28px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Unity's Button colour block: white at 0.196 alpha, 0.27 on hover —
+   translucent white discs on the level colour, with white icons. */
+.bar-btn {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: none;
-  background: rgba(63, 86, 102, 0.92);
-  color: #a8bfd0;
-  font-size: 20px;
-  line-height: 1;
+  background: rgba(255, 255, 255, 0.196);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  transition: background 0.15s ease;
 }
 
-.round-btn:hover { color: #fff; }
+.bar-btn:hover { background: rgba(255, 255, 255, 0.27); }
+.bar-btn:disabled { opacity: 0.4; cursor: default; }
+.bar-btn svg { width: 38px; height: 38px; }
+
+.round-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.196);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.round-btn:hover { background: rgba(255, 255, 255, 0.27); }
 .round-btn:disabled { opacity: 0.4; cursor: default; }
+.round-btn svg { width: 26px; height: 26px; }
 /* The hint button pulses gently while the level has unseen hints,
    like Unity's pulsating hint button. */
 .round-btn.pulse { animation: hint-pulse 1.6s ease-in-out infinite; }
@@ -499,26 +535,6 @@ canvas#board {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
 }
-
-.flag-btn {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(63, 86, 102, 0.94);
-  color: #fff;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  padding: 0;
-}
-
-.flag-btn:hover { background: var(--board-dark); }
-.flag-btn:disabled { opacity: 0.45; cursor: default; }
 
 .objectives { list-style: none; margin: 0; padding: 0; }
 .objectives li {

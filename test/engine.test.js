@@ -634,3 +634,35 @@ test('the header nav is on every page and marks the active tab', () => {
   const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
   assert.ok(css.includes('.top-nav a.active::after'), 'the dot rule exists');
 });
+
+// ---------- Unity game buttons (v40) ----------
+
+test('the game buttons match Unity: bottom bar, translucent discs, SVG icons', () => {
+  // Unity's GameButtons bar: Rewind left, Finish flag centre, Skip
+  // right, 100px up from the bottom; hint top-right, 50x50. The port
+  // keeps its restart button top-right with the hint (Sam, Nov 27).
+  const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const bar = html.slice(html.indexOf('class="game-bar"'));
+  assert.ok(bar.includes('id="undoBtn"'), 'bar has undo');
+  assert.ok(bar.includes('id="flagBtn"'), 'bar has the flag');
+  assert.ok(bar.includes('id="stepBtn"'), 'bar has step');
+  assert.ok(bar.indexOf('id="undoBtn"') < bar.indexOf('id="flagBtn"')
+    && bar.indexOf('id="flagBtn"') < bar.indexOf('id="stepBtn"'),
+    'bar order is undo, flag, step (left, centre, right)');
+  const hud = html.slice(html.indexOf('class="hud-buttons"'), html.indexOf('class="game-bar"'));
+  assert.ok(hud.includes('id="hintBtn"') && hud.includes('id="restartBtn"'),
+    'hint and restart stay top-right');
+  assert.ok(!hud.includes('id="undoBtn"') && !hud.includes('id="stepBtn"')
+    && !hud.includes('id="flagBtn"'), 'the main three are out of the top-right');
+  for (const id of ['hintBtn', 'restartBtn', 'undoBtn', 'flagBtn', 'stepBtn']) {
+    const btn = html.slice(html.indexOf(`id="${id}"`), html.indexOf(`id="${id}"`) + 900);
+    assert.ok(btn.includes('<svg'), `${id} has an SVG icon`);
+    assert.ok(!btn.includes('↩') && !btn.includes('▶') && !btn.includes('↻') && !btn.includes('🏁'),
+      `${id} has no text glyph`);
+  }
+  assert.ok(!html.includes('flag-btn'), 'the old big flag button class is gone');
+  const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.ok(css.includes('.game-bar'), 'the bar rule exists');
+  assert.ok(css.includes('rgba(255, 255, 255, 0.196)'),
+    'the discs use Unity\'s 0.196-alpha white');
+});
