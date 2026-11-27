@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=21';
-import { Game } from './engine.js?v=21';
-import { Renderer } from './render.js?v=21';
-import { parseLevel, serializeLevel } from './levels.js?v=21';
+import { T } from './types.js?v=22';
+import { Game } from './engine.js?v=22';
+import { Renderer } from './render.js?v=22';
+import { parseLevel, serializeLevel } from './levels.js?v=22';
 
 const $ = (id) => document.getElementById(id);
 

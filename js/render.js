@@ -100,11 +100,13 @@
 //   - Preview mode (UnitController.ShowGlobalPreview + GameStateController
 //     drag overlay): the previewed cell becomes bedrock and FLASHES WHITE
 //     — Flash(white, white at 0.6 alpha, 0.2s interval), a 0.4s pulse —
-//     the background darkens 0.4 toward black (World.Darken), and a
-//     GHOST HEX — a white hex outline at 0.3 alpha, 2.85 scale (~1.37x
-//     the cell), with a little pop — marks the previewed cell, while
-//     every empty cell gets a faint white hex outline (0.05-0.25 alpha).
-//     The port shows all of that while a wall preview is up, until GO.
+//     the background darkens toward black (World.Darken: 0.4 in Unity;
+//     the port uses 0.2 — Sam found Unity's #2f414e too dark, Nov 26),
+//     and a GHOST HEX — a white hex outline at 0.3 alpha, 2.85 scale
+//     (~1.37x the cell), with a little pop — marks the previewed cell,
+//     while every empty cell gets a faint white hex outline (0.05-0.25
+//     alpha). The port shows all of that while a wall preview is up,
+//     until GO.
 //   - MainGame.unity pastel palette: Yellow (1, 0.782, 0) = #FFC700,
 //     Red (0.961, 0.478, 0.506) = #F57A81, Green (0.265, 0.840, 0.629)
 //     = #44D6A0, Brown (0.753, 0.576, 0.361) = #C0935C.
@@ -116,7 +118,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=21';
+import { T } from './types.js?v=22';
 
 const COLORS = {
   bg: '#4f6d82',
@@ -304,8 +306,11 @@ export class Renderer {
     ctx.clearRect(0, 0, this.boardW, this.boardH);
     // Level-colour background, full bleed across the board. While a wall
     // preview is up, Unity darkens it 0.4 toward black (World.Darken);
-    // ease toward the darkened colour over ~200ms, and back when the
-    // preview clears. #4f6d82 -> #2f414e.
+    // the port uses 0.2 instead — Sam found Unity's #2f414e too dark
+    // (Nov 26), so the darkened colour is #3f5768, still clearly
+    // darker than the #4f6d82 board but much less oppressive. Ease
+    // toward the darkened colour over ~200ms, and back when the
+    // preview clears. #4f6d82 -> #3f5768.
     const previewing = !!game.previewState;
     const darkTarget = previewing ? 1 : 0;
     const darkStep = dt / 200;
@@ -313,7 +318,7 @@ export class Renderer {
       ? Math.min(darkTarget, this.bgDark + darkStep)
       : Math.max(darkTarget, this.bgDark - darkStep);
     const d = this.bgDark;
-    ctx.fillStyle = `rgb(${Math.round(79 - 32 * d)}, ${Math.round(109 - 44 * d)}, ${Math.round(130 - 52 * d)})`;
+    ctx.fillStyle = `rgb(${Math.round(79 - 16 * d)}, ${Math.round(109 - 22 * d)}, ${Math.round(130 - 26 * d)})`;
     ctx.fillRect(0, 0, this.boardW, this.boardH);
 
     // Cells whose own marker lights up on a path: pins (Cell.BecomePathOf
