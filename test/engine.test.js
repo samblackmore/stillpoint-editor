@@ -2,12 +2,17 @@
 // Run: node --test test/  (or npm test)
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { Nav, ORIENTATION } from '../js/nav.js';
 import { T } from '../js/types.js';
 import { Game, MOVE_MS, MOVE_SNAP_MS } from '../js/engine.js';
 import { Renderer, previewOverlayAlpha } from '../js/render.js';
 import { parseLevel } from '../js/levels.js';
 import { generateLevel, dailySeed, DEFAULT_CONFIG } from '../js/generator.js';
+
+const ROOT = path.dirname(fileURLToPath(import.meta.url)) + '/..';
 
 // The hand-made campaign levels used to live in levels/store/; the repo
 // no longer ships them (Nov 27 — it focuses on daily, random,
@@ -556,4 +561,19 @@ test('the edge objective reads like Unity: reach the safe zone', () => {
   const edge = game.objectiveList().find((o) => o.id === 'edge');
   assert.equal(edge.label, 'Reach the safe zone');
   assert.equal(edge.progress, '0/1 safe');
+});
+
+// ---------- app wiring regression (v38) ----------
+
+test('app.js defines the local helpers it calls', () => {
+  // Regression: v37 deleted escapeHtml along with the Levels menu,
+  // but updateHUD and the factory editor still call it — startLevel
+  // then threw before the draw loop started, so the game board was
+  // blank and the objectives list stayed empty.
+  const src = readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  for (const name of ['escapeHtml']) {
+    assert.ok(src.includes(`function ${name}(`),
+      `app.js calls ${name} but does not define it`);
+    assert.ok(src.includes(`${name}(`), `app.js never calls ${name}`);
+  }
 });

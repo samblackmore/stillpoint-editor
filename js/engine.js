@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=37';
-import { Nav, ORIENTATION } from './nav.js?v=37';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=38';
+import { Nav, ORIENTATION } from './nav.js?v=38';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
