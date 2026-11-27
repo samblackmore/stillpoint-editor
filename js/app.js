@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (level list, daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=28';
-import { Renderer } from './render.js?v=28';
-import { parseLevel, loadLevelFile } from './levels.js?v=28';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=28';
+import { Game } from './engine.js?v=29';
+import { Renderer } from './render.js?v=29';
+import { parseLevel, loadLevelFile } from './levels.js?v=29';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=29';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -241,6 +241,19 @@ async function startFromParams() {
     return;
   }
   showMenu();
+  // The factories page links here with ?factory=<id>: preselect that
+  // factory in the Random card and open its settings, so the card you
+  // tapped is the one you're looking at.
+  const factoryId = params.get('factory');
+  if (factoryId) {
+    const factory = await loadFactory(factoryId);
+    if (factory) {
+      try { localStorage.setItem(LAST_FACTORY_KEY, factoryId); } catch { /* private mode */ }
+      const sel = $('factorySelect');
+      if ([...sel.options].some((o) => o.value === factoryId)) sel.value = factoryId;
+      showFactoryInEditor(factory);
+    }
+  }
 }
 
 async function loadConfig() {

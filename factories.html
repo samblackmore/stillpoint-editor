@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#4f6d82">
+<title>Factories — Stillpoint</title>
+<link rel="stylesheet" href="styles.css?v=29">
+</head>
+<body>
+<header class="top theme-white" id="siteHeader">
+  <h1>Stillpoint <span>· html</span></h1>
+  <nav class="top-nav" aria-label="Pages">
+    <a href="index.html?daily">Daily</a><span aria-hidden="true">·</span>
+    <a href="index.html?random">Random</a><span aria-hidden="true">·</span>
+    <a href="./">Levels</a><span aria-hidden="true">·</span>
+    <a href="editor.html">Editor</a><span aria-hidden="true">·</span>
+    <a href="factories.html">Factories</a>
+  </nav>
+  <button class="theme-toggle" id="themeToggle" title="Switch header colour (white / yellow)" aria-label="Switch header colour"><span class="theme-swatch" aria-hidden="true"></span></button>
+</header>
+
+<main>
+  <section id="factoriesView">
+    <p class="intro">Generator presets measured from the campaign's hand-made levels — one factory per chapter. Open one to see its settings in the menu, or generate a level from it straight away.</p>
+
+    <h2>Story campaign</h2>
+    <div class="factory-grid" id="storyGrid"></div>
+
+    <h2>AI Generated Levels</h2>
+    <div class="factory-grid" id="aiGrid"></div>
+
+    <div id="customSection" hidden>
+      <h2>My factories</h2>
+      <div class="factory-grid" id="customGrid"></div>
+    </div>
+
+    <p class="foot" id="customEmpty">Your custom factories will appear here once you save one as new from the menu.</p>
+    <p class="foot">Edits you save in the browser stay in your browser — Download JSON from the menu's factory editor to commit one back to <code>factories/</code>.</p>
+  </section>
+</main>
+
+<script type="module" src="js/factories.js?v=29"></script>
+</body>
+</html>

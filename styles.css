@@ -225,6 +225,113 @@ main {
 .factory-form .field .range { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .factory-form .field .range label { color: rgba(255, 255, 255, 0.85); }
 
+/* Factories page: one card per factory, with icon chips for what it
+   contains. The grid is wider than the menu (1080px) so the cards
+   have room to breathe. */
+#factoriesView {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 20px 60px;
+  overflow-y: auto;
+}
+
+#factoriesView h2 { font-size: 19px; margin: 20px 0 10px; }
+#factoriesView .intro { color: var(--muted); font-size: 14px; margin: 6px 0 8px; }
+#factoriesView .foot { color: var(--muted); font-size: 13px; margin: 24px 0 0; }
+
+.factory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.factory-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.factory-card h3 {
+  margin: 0;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.factory-card h3 a { color: var(--ink); text-decoration: none; }
+.factory-card h3 a:hover { color: var(--accent-dark); }
+
+.factory-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fc, #5f869f);
+  flex-shrink: 0;
+}
+
+.factory-theme { margin: 0; color: rgba(255, 255, 255, 0.85); font-size: 14px; }
+
+.factory-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.chip svg { display: block; }
+
+.factory-actions { margin-top: auto; padding-top: 4px; display: flex; gap: 8px; align-items: center; }
+.factory-actions .btn { padding: 6px 14px; font-size: 13px; }
+
+.factory-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* Small badges on factory cards (the menu editor has its own scoped
+   .tag-edited rule; these are the shared ones). */
+.tag-edited {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--board-dark);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: 2px;
+}
+
+.tag-custom {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8ff5cf;
+  background: rgba(68, 214, 160, 0.16);
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: 2px;
+}
+
+.tag-dead {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffb3b8;
+  background: rgba(245, 122, 129, 0.16);
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: 2px;
+}
+
 /* Level list */
 .level-list {
   display: grid;

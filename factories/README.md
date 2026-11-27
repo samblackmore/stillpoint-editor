@@ -59,6 +59,13 @@ The JSON files are the source of truth — edit them directly. To check a
 change, generate a few levels from the factory and confirm the sizes and
 counts land in range (the 2026-11-27 check ran 5 seeds per factory).
 
+`factories.html` renders them as cards — name, chapter colour, and an
+icon chip per setting (grid size, players, enemies, endpoints, lures,
+diamonds, walls, survival, order, edge border). Equal min/max shows as
+×N ("×1"), a range as "1–3"; must-collect shows as "≥N". A card's name
+opens the factory in the menu's editor (`?factory=<id>`); Generate
+jumps straight to a random level from it (`?random&factory=<id>`).
+
 ### Editing in the browser
 
 The Random level card on the menu has a factory picker (Default + all 20
