@@ -116,7 +116,7 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=18';
+import { T } from './types.js?v=19';
 
 const COLORS = {
   bg: '#4f6d82',

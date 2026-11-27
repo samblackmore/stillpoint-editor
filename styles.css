@@ -1,16 +1,16 @@
-/* Stillpoint HTML port — shared styles. Cozy, flat, cream + slate.
-   The play board itself matches Unity: level-colour blue (#4f6d82),
-   dark translucent HUD panels, round buttons, big GO button. */
+/* Stillpoint HTML port — shared styles. The page outside the game
+   matches the game itself: level-colour blue (#4f6d82) background,
+   player yellow (#ffc700) for highlights, white for normal text. */
 :root {
-  --bg: #f6f1e7;
-  --card: #fffdf6;
-  --ink: #2b2d42;
-  --muted: #8d8570;
-  --line: #e5ddc8;
-  --accent: #e5989b;
-  --accent-dark: #b35c6b;
-  --good: #70a83b;
-  --bad: #c44536;
+  --bg: #4f6d82;
+  --card: #3f5666;
+  --ink: #ffffff;
+  --muted: rgba(255, 255, 255, 0.65);
+  --line: rgba(255, 255, 255, 0.25);
+  --accent: #ffc700;
+  --accent-dark: #ffc700;
+  --good: #44d6a0;
+  --bad: #f57a81;
   --board-bg: #4f6d82;
   --board-dark: #3f5666;
   --board-yellow: #ffc700;
@@ -18,6 +18,9 @@
 }
 
 * { box-sizing: border-box; }
+
+::selection { background: var(--board-yellow); color: var(--board-dark); }
+:focus-visible { outline: 2px solid var(--board-yellow); outline-offset: 2px; }
 
 body {
   margin: 0;
@@ -73,7 +76,7 @@ main {
   font-size: 19px;
 }
 
-.card p { margin: 6px 0; color: #55503f; }
+.card p { margin: 6px 0; color: rgba(255, 255, 255, 0.85); }
 
 .card p.small { font-size: 13px; color: var(--muted); }
 
@@ -95,11 +98,11 @@ main {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--board-dark);
   font-weight: 600;
 }
 
-.btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn.primary:hover { background: #ffd633; border-color: #ffd633; }
 
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn:disabled:hover { border-color: var(--line); }
@@ -137,8 +140,8 @@ input[type="text"], input[type="number"], select {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 /* Play view */
@@ -283,8 +286,8 @@ canvas#board {
   font-weight: 600;
   display: none;
 }
-.banner.win { display: block; background: #e6f2d8; color: #3f6d1e; }
-.banner.lose { display: block; background: #fbe3df; color: #8f2d22; }
+.banner.win { display: block; background: rgba(68, 214, 160, 0.16); color: #8ff5cf; }
+.banner.lose { display: block; background: rgba(245, 122, 129, 0.16); color: #ffb3b8; }
 
 .hint-text { font-size: 13px; color: var(--muted); margin-top: 8px; }
 
