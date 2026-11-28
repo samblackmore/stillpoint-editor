@@ -698,3 +698,62 @@ test('a bare ?random puts the rolled seed in the URL', () => {
   assert.ok(app.includes('history.replaceState(null, \'\', randomLevelUrl(factoryId, seed))'),
     'the rolled seed is written into the URL');
 });
+
+// ---------- diamond sparkle + safe/caught indicators (v43) ----------
+
+test('a diamond pickup sparks when the slide lands, not at the turn start', () => {
+  // 3x3: pin row, a diamond one cell above the piggy.
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 13 0', '0 3 0'],
+    objectives: {},
+  }));
+  game.stepForward();
+  const t0 = game.movePlanAt;
+  assert.equal(game.sparkleFx.length, 1);
+  assert.equal(game.sparkleFx[0].at, t0 + MOVE_SNAP_MS);
+  // The diamond is gone and counted, and the sparkle clears on undo.
+  assert.equal(game.collected[T.COLLECTABLE], 1);
+  game.rewind();
+  assert.equal(game.sparkleFx.length, 0);
+});
+
+test('a player reaching a pin is safe, and a lure catch is caught, at the landing time', () => {
+  const pin = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 3 0'],
+    objectives: {},
+  }));
+  pin.stepForward();
+  const p = pin.players()[0];
+  assert.equal(p.finished, true);
+  assert.equal(p.safeAt, pin.movePlanAt + MOVE_SNAP_MS);
+  pin.rewind();
+  assert.equal(pin.players()[0].finished, false);
+  assert.equal(pin.players()[0].safeAt, 0);
+
+  const lure = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 6 0', '0 3 0'],
+    objectives: {},
+  }));
+  lure.stepForward();
+  const q = lure.players()[0];
+  assert.equal(q.alive, false);
+  assert.equal(q.killedBy, 'lure');
+  assert.equal(q.caughtAt, lure.movePlanAt + MOVE_SNAP_MS);
+});
+
+test('the renderer draws sparkles and safe/caught hexes, and game text is not selectable', () => {
+  const render = readFileSync(path.join(ROOT, 'js/render.js'), 'utf8');
+  assert.ok(render.includes('SPARKLE_COUNT = 30'), 'the burst is 30 particles');
+  assert.ok(render.includes('SPARKLE_SPEED = 2'), 'the speed is Unity startSpeed 2');
+  assert.ok(render.includes('SPARKLE_LIFE_MS = 1000'), 'the lifetime is 1s');
+  assert.ok(render.includes('drawSparkles(game, wallNow)'), 'sparkles are drawn');
+  assert.ok(render.includes('drawIndicators(game, wallNow)'), 'indicators are drawn');
+  assert.ok(render.includes('0.2 + 0.3 * flashTri(now, 1)'),
+    'the hex pulses alpha 0.2 <-> 0.5 on a 1s leg');
+  assert.ok(!render.includes("strokeStyle = '#44d6a0'"),
+    'the old green finished ring is gone — the yellow safe hex marks it');
+  const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.ok(css.includes('user-select: none'), 'game HTML is not selectable');
+  assert.ok(css.includes('input, textarea, select'),
+    'form fields keep text selection');
+});

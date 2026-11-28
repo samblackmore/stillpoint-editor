@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=42';
-import { Nav, ORIENTATION } from './nav.js?v=42';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=43';
+import { Nav, ORIENTATION } from './nav.js?v=43';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -72,6 +72,8 @@ export class Game {
             alive: true,
             finished: false,
             sleeping: false,
+            safeAt: 0, // Date.now() the player reached a pin — safe hex scale-in
+            caughtAt: 0, // Date.now() the player was caught — caught hex scale-in
             path: [],
             target: null,
             oldPath: null,
@@ -101,6 +103,8 @@ export class Game {
     this.movePlanAt = 0; // Date.now() when the last turn's moves started
     this.pickupFx = []; // [{id, row, col, type, at}] — CollectableBase explosions, at = landing time
     this.pickupSeq = 0;
+    this.sparkleFx = []; // [{id, row, col, at}] — diamond pickup sparkles, at = landing time
+    this.sparkleSeq = 0;
     // What the last turn did (reset each advanceTurn): the finish flag
     // stops when a player collects a waypoint (endpoint) or reaches a pin.
     this.turnEvents = { endpoint: false, pin: false };
@@ -252,6 +256,7 @@ export class Game {
       items: [...this.items.entries()],
       chars: this.chars.map((c) => ({
         row: c.row, col: c.col, alive: c.alive, finished: c.finished, sleeping: c.sleeping,
+        safeAt: c.safeAt, caughtAt: c.caughtAt,
       })),
       turn: this.turn,
       wallsBuilt: this.wallsBuilt,
@@ -279,6 +284,7 @@ export class Game {
     // restored cells with no ghost slides or explosions.
     this.movePlan = [];
     this.pickupFx = [];
+    this.sparkleFx = [];
     this.turnEvents = { endpoint: false, pin: false };
     this.recomputePaths();
   }
@@ -381,7 +387,10 @@ export class Game {
       }
     }
 
-    // Enemies (and bombs, approximated) catch adjacent players.
+    // Enemies (and bombs, approximated) catch adjacent players. A catch
+    // lands when the turn's moves land (the last slide's snap), so the
+    // red hex pops in then, not at the turn's start.
+    const turnEndAt = this.movePlanAt + (this.movePlan.length ? Math.max(...this.movePlan.map((m) => m.delay)) : 0) + slideMs;
     for (const p of this.players()) {
       if (!p.alive || p.finished) continue;
       const dangerCells = this.adjacentOpenCells(p.row, p.col);
@@ -391,6 +400,7 @@ export class Game {
           if (dangerCells.some(([r, c]) => ch.row === r && ch.col === c)) {
             p.alive = false;
             p.killedBy = ch.kind;
+            p.caughtAt = turnEndAt;
           }
         }
       }
@@ -440,6 +450,7 @@ export class Game {
       if (item.type === T.LURE && mover.kind === 'player') {
         mover.alive = false;
         mover.killedBy = 'lure';
+        mover.caughtAt = this.movePlanAt + delay + slideMs;
       }
       // Endpoint + lure are CollectableBase in Unity: their 6 hex
       // segments explode apart on pickup. The renderer starts the
@@ -453,6 +464,17 @@ export class Game {
           at: this.movePlanAt + delay + slideMs,
         });
       }
+      // A diamond is an Item in Unity, so it just vanishes — but it
+      // spawns its Sparkle prefab on pickup. Same timing as the
+      // explosions: when the character's slide lands on the cell.
+      if (item.type === T.COLLECTABLE) {
+        this.sparkleFx.push({
+          id: this.sparkleSeq++,
+          row: mover.row,
+          col: mover.col,
+          at: this.movePlanAt + delay + slideMs,
+        });
+      }
     }
     if (mover.kind === 'player') {
       const terrain = this.terrain[mover.row][mover.col];
@@ -461,12 +483,16 @@ export class Game {
         // Reaching a pin stops the finish flag too (Sam's call — Unity's
         // loop only breaks on endpoint pickup and game end, but the flag
         // is meant to run "until reach waypoint or pins").
-        if (terrain === T.PIN) this.turnEvents.pin = true;
+        if (terrain === T.PIN) {
+          this.turnEvents.pin = true;
+          mover.safeAt = this.movePlanAt + delay + slideMs;
+        }
       }
       if (terrain === T.EDGE) {
         // Unity: a player that steps on the Edge is lost in the void.
         mover.alive = false;
         mover.killedBy = 'edge';
+        mover.caughtAt = this.movePlanAt + delay + slideMs;
       }
     }
   }

@@ -29,6 +29,13 @@
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+/* Nothing in the game is selectable: a tap on the win banner or the
+   objectives would otherwise highlight the text and Android pops up a
+   dictionary definition for it. Form fields keep text selection so
+   seeds and JSON stay editable. */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, select { -webkit-user-select: text; user-select: text; }
+
 body {
   margin: 0;
   background: var(--bg);

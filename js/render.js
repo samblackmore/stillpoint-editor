@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=42';
-import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=42';
+import { T } from './types.js?v=43';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=43';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -133,6 +133,22 @@ import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=42';
 // bottom-left, seg5 left vertical, seg6 top-left).
 const EXPLODE_DIRS = [[0.7, -0.7], [1, 0], [0.7, 0.7], [-0.7, 0.7], [-1, 0], [-0.7, -0.7]];
 const EXPLODE_MS = 1000;
+
+// Diamond pickup sparkle (Resources/Sparkle.prefab): one burst of 30
+// particles at pickup, startSpeed 2 units/s, startSize 0.5, lifetime
+// 1s, no gravity, no colour-over-lifetime. The emitter's shape is a
+// 25° cone, but Sam asked for random directions, so the port sprays
+// them in every direction. The port fades them out linearly; Unity
+// just pops them at 1s.
+const SPARKLE_COUNT = 30;
+const SPARKLE_SPEED = 2; // units/s (1 unit = one hex radius s here)
+const SPARKLE_SIZE_K = 0.7; // diamond k for a 0.5-unit particle
+const SPARKLE_LIFE_MS = 1000;
+
+// Safe/caught indicator (UnitController.CreateIndicator): the hexagon
+// scales in from 0 at the arrival, then Flashes alpha 0.2 <-> 0.5 on a
+// 1s leg. Safe is player yellow, caught is red.
+const INDICATOR_POP_MS = 250;
 
 const COLORS = {
   bg: '#4f6d82',
@@ -238,6 +254,7 @@ export class Renderer {
     this.previewAnim = null; // {key, start} for the ghost-hex pop
     this.previewFade = null; // {key, dist} — flood distances from the previewed cell, for the overlay fade
     this.explosions = new Map(); // pickupFx id -> {x, y, base, flashMax, at, segs}
+    this.sparkles = new Map(); // sparkleFx id -> {x, y, at, parts}
   }
 
   layout(game, width, height) {
@@ -714,6 +731,10 @@ export class Renderer {
     // Above the paths, below the characters (the pieces are items).
     this.drawExplosions(game, wallNow);
 
+    // Diamond pickup sparkles (Item.PickUpAnimation): a burst of small
+    // green diamonds when a character lands on a diamond.
+    this.drawSparkles(game, wallNow);
+
     // Characters: plain solid circles in their prefab colours. No faces —
     // Unity characters are just circles. A character that died this turn
     // (lure, catch) still glides to its cell before vanishing, so it is
@@ -723,6 +744,11 @@ export class Renderer {
       const pos = this.charPos(game, ch, wallNow);
       this.drawCharacter(ch, pos.x, pos.y, s);
     }
+
+    // Safe/caught indicators: a filled hexagon over a player that
+    // reached a pin (yellow) or was caught (red), pulsating. On top of
+    // the characters, like Unity's z - 0.1 in-front placement.
+    this.drawIndicators(game, wallNow);
   }
 
   pathFor(game, ch) {
@@ -823,6 +849,73 @@ export class Renderer {
     }
     for (const [id, ex] of this.explosions) {
       if (now > ex.at + 4000) this.explosions.delete(id);
+    }
+  }
+
+  // Diamond pickup sparkle: one burst of small green diamonds that fly
+  // out in random directions at constant speed (no gravity) and fade
+  // out over their 1s lifetime. Built once per pickup (like the
+  // explosions) so a re-render doesn't re-roll the directions.
+  drawSparkles(game, now) {
+    const s = this.size;
+    for (const fx of game.sparkleFx || []) {
+      if (now < fx.at || now > fx.at + SPARKLE_LIFE_MS) continue;
+      let sp = this.sparkles.get(fx.id);
+      if (!sp) {
+        sp = {
+          x: this.cellCenterX(fx.row, fx.col),
+          y: this.cellCenterY(fx.row),
+          at: fx.at,
+          parts: Array.from({ length: SPARKLE_COUNT }, () => ({
+            angle: Math.random() * Math.PI * 2,
+            // A little size jitter so the cloud doesn't read as uniform.
+            k: SPARKLE_SIZE_K * (0.8 + Math.random() * 0.4),
+          })),
+        };
+        this.sparkles.set(fx.id, sp);
+      }
+      for (const p of sp.parts) {
+        const age = (now - sp.at) / 1000; // seconds
+        const d = SPARKLE_SPEED * s * age;
+        const x = sp.x + Math.cos(p.angle) * d;
+        const y = sp.y + Math.sin(p.angle) * d;
+        const alpha = 1 - age / (SPARKLE_LIFE_MS / 1000);
+        if (alpha <= 0.01) continue;
+        // Diamond green (PastelGreen #44d6a0), same as the diamond itself.
+        this.drawDiamond(x, y, p.k, hexA('#44d6a0', alpha.toFixed(3)));
+      }
+    }
+    for (const [id, sp] of this.sparkles) {
+      if (now > sp.at + SPARKLE_LIFE_MS + 500) this.sparkles.delete(id);
+    }
+  }
+
+  // Safe/caught indicators (UnitController.CreateIndicator): a filled
+  // hexagon the full size of a wall, scaling in from 0 at the arrival,
+  // then Flashing alpha 0.2 <-> 0.5 on a 1s leg. Safe is player yellow
+  // (Colors.Yellow), caught is red (Colors.Red). Only players get one —
+  // Unity also puts a red hex on the enemy that caught the player, but
+  // the port leaves the enemy bare.
+  drawIndicators(game, now) {
+    const s = this.size;
+    for (const ch of game.chars) {
+      if (ch.kind !== 'player') continue;
+      let at = 0;
+      let color = null;
+      if (ch.finished && ch.safeAt) { at = ch.safeAt; color = COLORS.player; }
+      else if (!ch.alive && ch.caughtAt) { at = ch.caughtAt; color = COLORS.enemy; }
+      if (!color || now < at) continue;
+      const x = this.cellCenterX(ch.row, ch.col);
+      const y = this.cellCenterY(ch.row);
+      // Scale-in: Unity's Scaler eases 0 -> 2 from the arrival; a quick
+      // ease-out pop reads the same.
+      const p = Math.min(1, (now - at) / INDICATOR_POP_MS);
+      const scale = 1 - Math.pow(1 - p, 3);
+      if (scale <= 0.01) continue;
+      const alpha = 0.2 + 0.3 * flashTri(now, 1);
+      this.hexPath(x, y, s * scale);
+      this.ctx.fillStyle = hexA(color, alpha.toFixed(3));
+      this.ctx.fill();
     }
   }
 
@@ -931,13 +1024,6 @@ export class Renderer {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('z', x + r * 0.65, y - r * 0.65);
-    }
-    if (ch.finished) {
-      ctx.beginPath();
-      ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-      ctx.strokeStyle = '#44d6a0';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
     }
   }
 }
