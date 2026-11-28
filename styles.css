@@ -45,77 +45,45 @@ body {
 
 a { color: var(--accent-dark); }
 
-/* Site header: a full-width bar above the game (or the menu), in the
-   game's own colours — "Stillpoint · html" as before, then one-word
-   links to the pages, separated by bullets. The header is the one part
-   of the page that isn't the game blue, so its background is switchable
+/* Site header: a full-width bar above the game (or the home screen),
+   in the game's own colours — breadcrumbs on the left, the
+   white/yellow toggle on the right. The header is the one part of the
+   page that isn't the game blue, so its background is switchable
    (white / player yellow) with the little toggle on the right. */
 header.top {
   padding: 12px 20px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(15, 30, 40, 0.15);
 }
 
-header.top h1 {
-  font-size: 30px;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
-header.top h1 span { color: var(--accent-dark); }
-
-header.top p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.top-nav {
+/* Breadcrumbs: the header is no longer a big title + nav — it's the
+   path to where you are. Home is a little house icon; the last crumb
+   is the current page. Links are dark blue on both header themes. */
+.crumbs {
   display: flex;
-  gap: 10px;
-  align-items: baseline;
-  font-size: 14px;
+  gap: 8px;
+  align-items: center;
+  font-size: 15px;
+  min-width: 0;
 }
 
-.top-nav a { color: var(--ink); text-decoration: none; position: relative; padding-bottom: 8px; }
-.top-nav a:hover { color: var(--accent-dark); }
-/* The active tab gets a little dot underneath it (Sam, Nov 27) — the
-   menu is home, so no tab carries it there. currentColor is the link
-   colour, dark blue on both header themes. */
-.top-nav a.active::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  transform: translateX(-50%);
-}
-.top-nav span { color: var(--muted); }
+.crumb { color: #3f5666; text-decoration: none; white-space: nowrap; }
+.crumb:hover { text-decoration: underline; }
+.crumb.current { font-weight: 600; }
+.crumb.home { display: flex; align-items: center; }
+.crumb.home svg { width: 22px; height: 22px; display: block; }
+.crumb-sep { color: rgba(63, 86, 102, 0.5); }
 
-/* White header: dark-blue text, the "· html" in a deeper gold so it
-   still reads on white. */
+/* White header: dark-blue text on white. */
 header.top.theme-white { background: #fff; }
-header.top.theme-white h1 { color: #3f5666; }
-header.top.theme-white h1 span { color: #d9a400; }
-header.top.theme-white .top-nav a { color: #3f5666; }
-header.top.theme-white .top-nav a:hover { color: #d9a400; }
-header.top.theme-white .top-nav span { color: rgba(63, 86, 102, 0.5); }
 
 /* Yellow header: the player yellow as the background, dark blue for
    everything on it — the yellow IS the accent here. */
 header.top.theme-yellow { background: var(--accent); }
-header.top.theme-yellow h1 { color: #3f5666; }
-header.top.theme-yellow h1 span { color: #3f5666; }
-header.top.theme-yellow .top-nav a { color: #3f5666; }
-header.top.theme-yellow .top-nav a:hover { text-decoration: underline; }
-header.top.theme-yellow .top-nav span { color: rgba(63, 86, 102, 0.55); }
 
 /* The header-colour toggle: a little split white/yellow swatch. */
 .theme-toggle {
@@ -153,7 +121,50 @@ main {
 }
 
 #menuView .intro { color: var(--muted); font-size: 14px; margin: 6px 0 16px; }
-#menuView .foot { color: var(--muted); font-size: 13px; margin: 24px 0 0; }
+
+/* Home screen: the big title lives here now (it left the header), then
+   one big button per section — title plus a super short description. */
+.home-title {
+  margin: 8px 0 0;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.home-title span { color: var(--accent-dark); }
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.home-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.home-btn:hover { background: #46607a; }
+.home-btn-title { font-size: 18px; font-weight: 700; }
+.home-btn-desc { font-size: 14px; color: var(--muted); }
+
+/* The factory picker and editor live here, collapsed, so the home
+   screen stays clean — the big Random button plays with the last-used
+   factory. */
+.random-options { margin-top: 20px; max-width: 560px; }
+.random-options summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+}
+.random-options p { color: rgba(255, 255, 255, 0.85); }
+.random-options p.small { font-size: 13px; color: var(--muted); }
 
 .card {
   background: var(--card);
@@ -366,13 +377,6 @@ input[type="text"], input[type="number"], select {
   min-height: 0;
   flex-direction: column;
 }
-
-.play-head {
-  padding: 8px 20px 10px;
-  flex-shrink: 0;
-}
-
-.play-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
 
 .board-wrap {
   background: var(--board-bg);

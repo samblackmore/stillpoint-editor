@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=40';
-import { Renderer } from './render.js?v=40';
-import { parseLevel } from './levels.js?v=40';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=40';
+import { Game } from './engine.js?v=41';
+import { Renderer } from './render.js?v=41';
+import { parseLevel } from './levels.js?v=41';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=41';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -41,16 +41,57 @@ function showMenu() {
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) metaTheme.content = '#4f6d82';
   setPageBg('#4f6d82');
-  setActiveNav(null);
+  renderCrumbs(null);
 }
 
-// The header nav shows which tab you're on: a dot under the active
-// link (Sam, Nov 27). The menu is home — no tab is active there, so
-// `kind` is null and every link loses the dot.
-function setActiveNav(kind) {
-  for (const a of document.querySelectorAll('.top-nav a')) {
-    a.classList.toggle('active', a.dataset.nav === kind);
+// Breadcrumbs (Sam, Nov 27): the header is no longer a big title + nav
+// — it's the path to where you are, so the game gets the vertical
+// space. Home is a little house icon; tapping it goes home. The last
+// crumb is the current page. Tapping "Random" generates a fresh seed,
+// and tapping a factory name generates a fresh level in that factory.
+function shortFactoryName(name) {
+  // "Stage 3 — Waypoints" -> "Waypoints"; "Survival 1" stays as-is.
+  const parts = String(name).split('—');
+  return (parts.length > 1 ? parts[parts.length - 1] : name).trim();
+}
+
+function renderCrumbs(meta) {
+  const nav = $('crumbs');
+  const homeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 12h-3v9h-5v-6h-4v6H5v-9H2Z" fill="currentColor"/></svg>';
+  const sep = '<span class="crumb-sep" aria-hidden="true">›</span>';
+  const homeLink = `<a href="index.html" class="crumb home" aria-label="Home">${homeIcon}</a>`;
+  const homeCurrent = `<span class="crumb home current" aria-current="page" aria-label="Home">${homeIcon}</span>`;
+  const link = (href, label) => `<a href="${href}" class="crumb">${escapeHtml(label)}</a>`;
+  const current = (label) => `<span class="crumb current" aria-current="page">${escapeHtml(label)}</span>`;
+  if (!meta) {
+    nav.innerHTML = homeCurrent;
+    return;
   }
+  let crumbs = homeLink;
+  if (meta.kind === 'daily') {
+    crumbs += sep + link('?daily', 'Daily') + sep + current(meta.seed);
+  } else if (meta.kind === 'random') {
+    if (meta.factory) {
+      crumbs += sep + link('factories.html', 'Factories')
+        + sep + link(`?random&factory=${encodeURIComponent(meta.factory)}`, shortFactoryName(meta.factoryName || meta.factory))
+        + sep + current(`seed ${meta.seed}`);
+    } else {
+      crumbs += sep + link('?random', 'Random') + sep + current(`seed ${meta.seed}`);
+    }
+  } else if (meta.kind === 'draft') {
+    crumbs += sep + link('editor.html', 'Editor') + sep + current('Draft');
+  }
+  nav.innerHTML = crumbs;
+}
+
+// The big Random button on the home screen plays with the last-used
+// factory (or the Default config) — a fresh seed every tap.
+function updateRandomHomeLink() {
+  let factory = 'default';
+  try { factory = localStorage.getItem(LAST_FACTORY_KEY) || 'default'; } catch { /* private mode */ }
+  $('randomHomeBtn').href = factory !== 'default'
+    ? `?random&factory=${encodeURIComponent(factory)}`
+    : '?random';
 }
 
 // The page background follows the level's own background colour, so the
@@ -68,9 +109,7 @@ function showPlay() {
 }
 
 function renderMenu() {
-  const today = dailySeed();
-  $('dailySeed').textContent = today;
-  $('dailyLink').href = `?daily=${today}`;
+  updateRandomHomeLink();
 }
 
 // ---- Play ----
@@ -84,11 +123,9 @@ function startLevel(def, meta) {
   // The phone browser chrome matches the level's background colour.
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) metaTheme.content = def.color || '#4f6d82';
-  // So does the page background, and the nav dot follows the level:
-  // Daily / Random for those, Editor for an editor-draft playtest.
+  // So does the page background, and the breadcrumbs follow the level.
   setPageBg(def.color || '#4f6d82');
-  setActiveNav(meta.kind === 'draft' ? 'editor' : meta.kind);
-  $('levelName').textContent = meta.name;
+  renderCrumbs(meta);
   $('statusBanner').className = 'banner';
   $('statusBanner').textContent = '';
   $('stepBtn').disabled = !!def.disableStepForward;
@@ -243,7 +280,7 @@ async function nextFactoryLevel() {
   try {
     history.replaceState(null, '', `?random&factory=${encodeURIComponent(factoryId)}&seed=${encodeURIComponent(seed)}`);
   } catch { /* file:// or sandboxed: the URL just doesn't update */ }
-  startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed} (${factory.name})`, kind: 'random', factory: factoryId });
+  startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed} (${factory.name})`, kind: 'random', factory: factoryId, seed, factoryName: factory.name });
 }
 
 function onBoardTap(ev) {
@@ -277,7 +314,7 @@ async function startFromParams() {
     const seed = params.get('daily') || dailySeed();
     const res = generateLevel(seed, await loadConfig());
     if (!res) return showMenu();
-    startLevel(res.level, { id: `daily-${seed}`, name: `Daily puzzle — ${seed}`, kind: 'daily' });
+    startLevel(res.level, { id: `daily-${seed}`, name: `Daily puzzle — ${seed}`, kind: 'daily', seed });
     return;
   }
   if (params.has('random') || params.has('gen')) {
@@ -285,19 +322,21 @@ async function startFromParams() {
     const factoryId = params.get('factory');
     let cfg = await loadConfig();
     let factoryName = '';
+    let factoryRawName = null;
     let factoryColor = null;
     if (factoryId) {
       const factory = await loadFactory(factoryId);
       if (factory) {
         cfg = { ...DEFAULT_CONFIG, ...factory.settings };
         factoryName = ` (${factory.name})`;
+        factoryRawName = factory.name;
         factoryColor = factory.color || null;
       }
     }
     // The level takes its factory's chapter colour as its background.
     const res = generateLevel(seed, cfg, factoryColor);
     if (!res) return showMenu();
-    startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random', factory: factoryId || null });
+    startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random', factory: factoryId || null, seed, factoryName: factoryRawName });
     return;
   }
   if (params.has('draft')) {
@@ -480,6 +519,9 @@ function showFactoryInEditor(factory) {
   $('factoryEditTheme').textContent = factory.theme || '';
   fillFactoryForm(settings);
   $('factoryEditor').hidden = false;
+  // The editor lives inside the collapsed "Random level options", so
+  // open it — this is also the factories page's ?factory= entry point.
+  $('randomOptions').open = true;
   $('factoryResetBtn').textContent = factory.custom ? 'Delete factory' : 'Reset to shipped';
 }
 
@@ -565,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFactorySelect();
   $('factorySelect').addEventListener('change', () => {
     try { localStorage.setItem(LAST_FACTORY_KEY, $('factorySelect').value); } catch { /* private mode */ }
+    updateRandomHomeLink();
     if (!$('factoryEditor').hidden) openFactoryEditor();
   });
   $('editFactoryBtn').addEventListener('click', () => {

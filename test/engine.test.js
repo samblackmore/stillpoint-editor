@@ -618,21 +618,39 @@ test('generated levels with no factory get Unity\'s random chapter colour', () =
   assert.deepEqual(withFactory.level.grid, a.level.grid);
 });
 
-test('the header nav is on every page and marks the active tab', () => {
-  // The nav (Daily · Random · Editor · Factories) is the same on all
-  // three pages; the active tab carries a dot (see styles.css).
-  for (const page of ['index.html', 'factories.html', 'editor.html']) {
-    const html = readFileSync(path.join(ROOT, page), 'utf8');
-    for (const tab of ['daily', 'random', 'editor', 'factories']) {
-      assert.ok(html.includes(`data-nav="${tab}"`), `${page} nav has a ${tab} link`);
-    }
+test('the header is breadcrumbs and the home screen is big buttons', () => {
+  // The header lost its big title + nav (v41): it's breadcrumbs now,
+  // and the title lives on the home screen above one big button per
+  // section. The factory picker and editor survive, collapsed, under
+  // "Random level options" so the home screen stays clean.
+  const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.ok(!html.includes('top-nav'), 'no nav list any more');
+  assert.ok(!html.includes('data-nav='), 'no data-nav links any more');
+  assert.ok(html.includes('id="crumbs"'), 'the header has a crumbs nav');
+  assert.ok(!html.includes('play-head'), 'no level-name strip on the player screen');
+  assert.ok(!html.includes('id="levelName"'), 'no levelName element');
+  assert.ok(html.includes('class="home-title"'), 'the home screen has the title');
+  for (const [id, href, label] of [
+    ['dailyLink', '?daily', 'Daily'],
+    ['randomHomeBtn', '?random', 'Random'],
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `home has a ${label} button`);
   }
-  const editorHtml = readFileSync(path.join(ROOT, 'editor.html'), 'utf8');
-  assert.ok(editorHtml.includes('data-nav="editor" class="active"'), 'editor marks its own tab');
-  const factoriesHtml = readFileSync(path.join(ROOT, 'factories.html'), 'utf8');
-  assert.ok(factoriesHtml.includes('data-nav="factories" class="active"'), 'factories marks its own tab');
+  assert.ok(html.includes('href="factories.html"'), 'home has a Factories button');
+  assert.ok(html.includes('href="editor.html"'), 'home has an Editor button');
+  for (const id of ['factorySelect', 'randomSeed', 'randomBtn', 'factoryEditor', 'randomOptions']) {
+    assert.ok(html.includes(`id="${id}"`), `the options keep ${id}`);
+  }
+  for (const page of ['factories.html', 'editor.html']) {
+    const pageHtml = readFileSync(path.join(ROOT, page), 'utf8');
+    assert.ok(pageHtml.includes('class="crumbs"'), `${page} has breadcrumbs`);
+    assert.ok(pageHtml.includes('aria-label="Home"'), `${page} crumbs start at Home`);
+    assert.ok(!pageHtml.includes('top-nav'), `${page} has no nav list`);
+  }
   const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-  assert.ok(css.includes('.top-nav a.active::after'), 'the dot rule exists');
+  assert.ok(css.includes('.crumbs'), 'the crumbs rule exists');
+  assert.ok(css.includes('.home-btn'), 'the home-button rule exists');
+  assert.ok(!css.includes('.top-nav a.active::after'), 'the dot rule is gone with the nav');
 });
 
 // ---------- Unity game buttons (v40) ----------

@@ -5,33 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — HTML prototype</title>
-<link rel="stylesheet" href="styles.css?v=40">
+<link rel="stylesheet" href="styles.css?v=41">
 </head>
 <body>
 <header class="top theme-white" id="siteHeader">
-  <h1>Stillpoint <span>· html</span></h1>
-  <nav class="top-nav" aria-label="Pages">
-    <a href="?daily" data-nav="daily">Daily</a><span aria-hidden="true">·</span>
-    <a href="?random" data-nav="random">Random</a><span aria-hidden="true">·</span>
-    <a href="editor.html" data-nav="editor">Editor</a><span aria-hidden="true">·</span>
-    <a href="factories.html" data-nav="factories">Factories</a>
-  </nav>
+  <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
   <button class="theme-toggle" id="themeToggle" title="Switch header colour (white / yellow)" aria-label="Switch header colour"><span class="theme-swatch" aria-hidden="true"></span></button>
 </header>
 
 <main>
   <section id="menuView">
-    <p class="intro">A browser prototype of the Stillpoint puzzle — same pathfinding, same turn flow, no Unity build. Tap a cell to preview a wall, tap it again to place it. Tap the 🏁 flag to fast-forward turns until the piggy reaches a waypoint or the safe zone.</p>
-    <div class="card">
-      <h2>Daily puzzle</h2>
-      <p>One generated level per day, same for everyone. Today's seed is <strong id="dailySeed">…</strong>.</p>
-      <div class="btn-row">
-        <a class="btn primary" id="dailyLink" href="?daily">Play today's puzzle</a>
-      </div>
+    <h1 class="home-title">Stillpoint <span>· html</span></h1>
+    <p class="intro">The Stillpoint puzzle, in your browser — same pathfinding, same turn flow, no Unity build.</p>
+    <div class="home-buttons">
+      <a class="home-btn" id="dailyLink" href="?daily">
+        <span class="home-btn-title">Daily</span>
+        <span class="home-btn-desc">One puzzle a day, same for everyone.</span>
+      </a>
+      <a class="home-btn" id="randomHomeBtn" href="?random">
+        <span class="home-btn-title">Random</span>
+        <span class="home-btn-desc">Play a random level.</span>
+      </a>
+      <a class="home-btn" href="factories.html">
+        <span class="home-btn-title">Factories</span>
+        <span class="home-btn-desc">Play a level from a chapter.</span>
+      </a>
+      <a class="home-btn" href="editor.html">
+        <span class="home-btn-title">Editor</span>
+        <span class="home-btn-desc">Build your own level.</span>
+      </a>
     </div>
-
-    <div class="card">
-      <h2>Random level</h2>
+    <details class="random-options" id="randomOptions">
+      <summary>Random level options</summary>
       <p>Generate a level from a seed — share the seed to share the level.</p>
       <div class="btn-row">
         <select id="factorySelect" aria-label="Factory"></select>
@@ -64,17 +69,10 @@
         </div>
         <p class="small" id="factoryEditStatus"></p>
       </div>
-    </div>
-
-    <p class="foot">Stillpoint HTML prototype — a port for fast prototyping and playtesting.
-    Rules ported from the Unity game (pathfinding, turn flow, generator);
-    abilities, flood and fog are not ported yet — see README.</p>
+    </details>
   </section>
 
   <section id="playView">
-    <div class="play-head">
-      <h2 id="levelName">Level</h2>
-    </div>
     <div class="board-wrap">
       <canvas id="board"></canvas>
       <div class="hud-objectives" id="hudObjectives">
@@ -96,6 +94,6 @@
   </section>
 </main>
 
-<script type="module" src="js/app.js?v=40"></script>
+<script type="module" src="js/app.js?v=41"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f6d82">
 <title>Stillpoint — Level editor</title>
-<link rel="stylesheet" href="styles.css?v=40">
+<link rel="stylesheet" href="styles.css?v=41">
 <style>
   .tool.selected { border-color: var(--accent-dark); background: rgba(255, 199, 0, 0.15); }
   .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.35); vertical-align: -2px; margin-right: 4px; }
@@ -21,12 +21,8 @@
 </head>
 <body>
 <header class="top theme-white" id="siteHeader">
-  <h1>Stillpoint <span>· editor</span></h1>
-  <nav class="top-nav" aria-label="Pages">
-    <a href="index.html?daily" data-nav="daily">Daily</a><span aria-hidden="true">·</span>
-    <a href="index.html?random" data-nav="random">Random</a><span aria-hidden="true">·</span>
-    <a href="editor.html" data-nav="editor" class="active">Editor</a><span aria-hidden="true">·</span>
-    <a href="factories.html" data-nav="factories">Factories</a>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="index.html" class="crumb home" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 12h-3v9h-5v-6h-4v6H5v-9H2Z" fill="currentColor"/></svg></a><span class="crumb-sep" aria-hidden="true">›</span><span class="crumb current" aria-current="page">Editor</span>
   </nav>
   <button class="theme-toggle" id="themeToggle" title="Switch header colour (white / yellow)" aria-label="Switch header colour"><span class="theme-swatch" aria-hidden="true"></span></button>
 </header>
@@ -75,6 +71,6 @@
   </div>
 </main>
 
-<script type="module" src="js/editor.js?v=40"></script>
+<script type="module" src="js/editor.js?v=41"></script>
 </body>
 </html>
