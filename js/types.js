@@ -23,6 +23,11 @@ export const T = {
   PIN: 18,
   OBSTACLE: 19,
   OLDTIMER: 20,
+  // Port-only: Unity has no such code — an enemy pin there is a Pin cell
+  // flagged _isEnemyPin (Cell.cs). The port needs a distinct terrain type
+  // so the generator, engine and renderer can tell it apart from a safe
+  // pin (and so undo, which snapshots the terrain grid, restores it).
+  ENEMY_PIN: 21,
 };
 
 export const TYPE_NAME = Object.fromEntries(
@@ -62,8 +67,8 @@ export const STATIC_ITEM_TYPES = new Set([T.OLDTIMER]);
 //   canMoveAfterDestroyWall: digger-style behaviour (destroys a wall it steps into)
 export const RULES = {
   player: {
-    searching: [T.PULL, T.WAYPOINT, T.ENDPOINT, T.LURE, T.EDGE, T.PIN, T.OLDTIMER],
-    stopOn: [T.PIN],
+    searching: [T.PULL, T.WAYPOINT, T.ENDPOINT, T.LURE, T.EDGE, T.PIN, T.ENEMY_PIN, T.OLDTIMER],
+    stopOn: [T.PIN, T.ENEMY_PIN],
     blocking: {
       [T.ENEMY]: 10, [T.BOMB]: -1, [T.PLAYER]: 10, [T.DIGGER]: 10,
       [T.FREEZE]: -1, [T.WALL]: -1, [T.OBSTACLE]: 1, [T.BEDROCK]: -1,
@@ -77,7 +82,7 @@ export const RULES = {
     stopOn: [],
     blocking: {
       [T.COLLECTABLE]: 10, [T.ENDPOINT]: -1, [T.BEDROCK]: -1, [T.EDGE]: -1,
-      [T.PIN]: -1, [T.ENEMY]: 10, [T.BOMB]: -1, [T.DIGGER]: -1, [T.WALL]: -1,
+      [T.PIN]: -1, [T.ENEMY_PIN]: -1, [T.ENEMY]: 10, [T.BOMB]: -1, [T.DIGGER]: -1, [T.WALL]: -1,
     },
     searchDistance: 35,
     sleepRange: 10,

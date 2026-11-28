@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=45';
-import { Nav, ORIENTATION } from './nav.js?v=45';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=46';
+import { Nav, ORIENTATION } from './nav.js?v=46';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -412,7 +412,25 @@ export class Game {
     // Re-path before judging the end: a player that just collected its
     // target may have a new one, and only a genuinely pathless player ends it.
     this.recomputePaths();
+    this.updateEnemyPins();
     this.checkEnd();
+  }
+
+  // Survival: once the required turn count is reached, the enemy pins
+  // along the bottom turn into safe pins (Unity: ObjectivesBox flips
+  // them when turnsRemaining hits 0, via NoLongerEnemyPin + BecomePin).
+  // Runs after the turn's moves resolve, so a piggy that steps on one
+  // on the very turn the timer completes is still caught — the safe
+  // pins are usable from the next turn on. The terrain is snapshotted,
+  // so undo restores the enemy pins.
+  updateEnemyPins() {
+    const survival = this.def.objectives?.SurvivalTurnCount || 0;
+    if (survival <= 0 || this.turn < survival) return;
+    for (let r = 0; r < this.terrain.length; r++) {
+      for (let c = 0; c < this.terrain[r].length; c++) {
+        if (this.terrain[r][c] === T.ENEMY_PIN) this.terrain[r][c] = T.PIN;
+      }
+    }
   }
 
   // The player's own cell plus adjacent cells reachable without crossing a
@@ -497,6 +515,16 @@ export class Game {
         mover.alive = false;
         mover.killedBy = 'edge';
         mover.caughtAt = this.movePlanAt + delay + slideMs;
+      }
+      if (terrain === T.ENEMY_PIN) {
+        // Unity: a player finishing on an enemy pin is Caught (a red
+        // hex, not a safe one). The port kills them outright, like the
+        // edge — a caught piggy can't survive the turn count or reach
+        // a safe pin, so the level is lost.
+        mover.alive = false;
+        mover.killedBy = 'enemypin';
+        mover.caughtAt = this.movePlanAt + delay + slideMs;
+        this.turnEvents.pin = true;
       }
     }
   }
@@ -667,7 +695,9 @@ export class Game {
             ? 'The piggy was caught by a bomb'
             : dead.killedBy === 'lure'
               ? 'The piggy fell for the lure'
-              : 'The piggy was caught'
+              : dead.killedBy === 'enemypin'
+                ? 'The piggy was caught on an enemy pin'
+                : 'The piggy was caught'
         : 'The piggy has nowhere left to go';
     }
   }

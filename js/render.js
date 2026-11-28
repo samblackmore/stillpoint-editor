@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=45';
-import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=45';
+import { T } from './types.js?v=46';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=46';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -437,7 +437,7 @@ export class Renderer {
           const item = game.items.get(key);
           const isItemTarget = item && (item.type === T.ENDPOINT ||
             item.type === T.LURE || item.type === T.WAYPOINT);
-          if (game.terrain[step.row]?.[step.col] === T.PIN || isItemTarget) {
+          if (game.terrain[step.row]?.[step.col] === T.PIN || game.terrain[step.row]?.[step.col] === T.ENEMY_PIN || isItemTarget) {
             pathTargets.set(key, { color, alpha: Math.max(0.4, 1 - i * 0.1) });
           }
         });
@@ -476,6 +476,16 @@ export class Renderer {
           ctx.arc(x, y, s * 0.248 * k, 0, Math.PI * 2);
           ctx.strokeStyle = lit ? hexA(lit.color, lit.alpha) : COLORS.pin;
           ctx.lineWidth = Math.max(2, s * 0.124 * k);
+          ctx.stroke();
+        } else if (t === T.ENEMY_PIN) {
+          // BecomeEnemyPin: the same PinSprite ring at PinSize * 1.5,
+          // in Red at 0.8 alpha — a bigger red ring. It is not lit by
+          // the path (the red is the warning); it turns into a safe
+          // pin once the survival turn count is reached.
+          ctx.beginPath();
+          ctx.arc(x, y, s * 0.248 * 1.5, 0, Math.PI * 2);
+          ctx.strokeStyle = hexA(COLORS.enemy, 0.8);
+          ctx.lineWidth = Math.max(2, s * 0.124 * 1.5);
           ctx.stroke();
         } else if (t === T.EDGE) {
           // EdgeSprite is a cross, PastelRed at 0.6.

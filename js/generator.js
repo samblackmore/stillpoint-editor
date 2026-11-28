@@ -7,9 +7,9 @@
 // around the seeds. Everything else is placed by rejection sampling with
 // minimum-separation rules (LayoutCells), retrying the whole level up to
 // 100 times when a placement fails.
-import { T } from './types.js?v=45';
-import { RNG } from './rng.js?v=45';
-import { Nav, ORIENTATION } from './nav.js?v=45';
+import { T } from './types.js?v=46';
+import { RNG } from './rng.js?v=46';
+import { Nav, ORIENTATION } from './nav.js?v=46';
 
 const DENSITY = { VerySparse: 1.5, Sparse: 1.3, Normal: 1, Dense: 0.75 };
 
@@ -166,18 +166,24 @@ function tryGenerate(rng, cfg, color) {
   if (cfg.edgeRight) for (const row of layout.cells) row[layout.width - 1] = T.EDGE;
 
   if (survivalMode) {
-    // Survival mode: no pins — Unity's five survival-only levels have
-    // none (a pin would end the run the moment the piggy reached it).
-    // Instead the board is ringed with edge cells, as in Unity's
-    // survival levels (level0.json): the piggy beelines for the void
-    // and the player walls it off to survive N turns.
+    // Survival mode: enemy pins along the bottom edge only (Sam, Nov 28).
+    // Unity's five survival-only levels have no pins at all, but the
+    // ObjectivesBox flips a level's pins into enemy pins while a
+    // survival timer runs — a red pin that catches the piggy, turning
+    // safe once the required turn count is reached. So the bottom row
+    // (JSON row 0) is enemy pins and the other three sides stay edge
+    // cells (the void), as in Unity's survival levels (level0.json).
+    // The piggy beelines for the pins and the player walls it off to
+    // survive N turns, then walks it onto a (now safe) pin.
     for (let x = 0; x < layout.width; x++) {
-      layout.cells[0][x] = T.EDGE;
       layout.cells[layout.height - 1][x] = T.EDGE;
     }
     for (const row of layout.cells) {
       row[0] = T.EDGE;
       row[layout.width - 1] = T.EDGE;
+    }
+    for (let x = 0; x < layout.width; x++) {
+      layout.cells[0][x] = T.ENEMY_PIN;
     }
   } else {
     // Pins: the bottom row (JSON row 0) is the piggy's destination — in
@@ -247,7 +253,7 @@ function tryGenerate(rng, cfg, color) {
   // so a player can end up walled into a pocket (Caverns seed
   // v30b-stage-2-caverns-2 did exactly this); reject the level and let
   // generateLevel retry with fresh randomness.
-  const dest = survivalMode ? T.EDGE : T.PIN;
+  const dest = survivalMode ? T.ENEMY_PIN : T.PIN;
   const reachNav = new Nav(layout.height, layout.width, ORIENTATION.HORIZONTAL, (r, c) => {
     const t = layout.cells[r][c];
     return t === T.EMPTY ? [] : [t];
@@ -297,17 +303,18 @@ function tryGenerate(rng, cfg, color) {
   }
 
   // ReachEdge ("reach safe zone") is the ending whenever the level has
-  // pins — which is everywhere except survival mode, where there are no
-  // pins to reach and the only objective is surviving. It sits alongside
-  // the collect objectives on 207 of 231 hand-made levels: you collect
-  // the things, then pin.
+  // pins — which is everywhere, including survival mode now that its
+  // bottom row is enemy pins (they turn safe once the survival turns
+  // are done, and the piggy walks onto one to finish). It sits
+  // alongside the collect objectives on 207 of 231 hand-made levels:
+  // you collect the things, then pin.
   return {
     grid: layout.cells,
     orientation: 0,
     sleeping: false,
     color: color || null,
     objectives: {
-      ReachEdge: !survivalMode,
+      ReachEdge: true,
       SurvivalTurnCount: survival,
       CollectItemObjectives: collectObjectives,
       CollectOrder: cfg.orderObjective ? shuffledRange(rng, colCount) : [],

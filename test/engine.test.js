@@ -143,11 +143,14 @@ test('generated levels have a pin row and a reach-the-safe-zone ending', () => {
   }
 });
 
-test('generated survival levels are ringed with edge, not pins', () => {
-  // Unity's five survival-only levels have no pins at all (a pin would
-  // end the run the moment the piggy reached it) and are ringed with
-  // edge cells: the piggy beelines for the void and the player walls it
-  // off to survive N turns. Generated survival levels do the same.
+test('generated survival levels are ringed with edge, enemy pins at the bottom', () => {
+  // Unity's five survival-only levels have no pins at all and are ringed
+  // with edge cells — but the ObjectivesBox flips a level's pins into
+  // enemy pins while a survival timer runs, and Sam (Nov 28) wants the
+  // survival factories to use that: enemy pins along the bottom edge
+  // only, the other three sides edge. The piggy beelines for the pins
+  // and the player walls it off to survive N turns, then walks it onto
+  // a (now safe) pin — so survival levels end by reaching the safe zone.
   const cfg = {
     ...DEFAULT_CONFIG,
     survivalTurnCount: { min: 7, max: 7 },
@@ -156,10 +159,10 @@ test('generated survival levels are ringed with edge, not pins', () => {
     lures: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
   };
   const { level } = generateLevel('surv-pins', cfg);
-  assert.ok(!level.grid.flat().includes(T.PIN), 'no pins anywhere');
-  assert.ok(level.grid[0].every((t) => t === T.EDGE), 'top row is edge');
-  assert.ok(level.grid[level.grid.length - 1].every((t) => t === T.EDGE), 'bottom row is edge');
-  assert.equal(level.objectives.ReachEdge, false);
+  assert.ok(!level.grid.flat().includes(T.PIN), 'no safe pins anywhere');
+  assert.ok(level.grid[0].every((t) => t === T.ENEMY_PIN), 'bottom row is enemy pins');
+  assert.ok(level.grid[level.grid.length - 1].every((t) => t === T.EDGE), 'top row is edge');
+  assert.equal(level.objectives.ReachEdge, true);
   assert.equal(level.objectives.SurvivalTurnCount, 7);
 });
 
@@ -841,4 +844,74 @@ test('the editor keeps an imported collect order through re-renders', () => {
     objectives: { ReachEdge: true, CollectOrder: [1, 0] },
   });
   assert.deepEqual(def.objectives.CollectOrder, [1, 0]);
+});
+
+// ---------- enemy pins (v46) ----------
+
+test('a survival level gets enemy pins along the bottom only', () => {
+  const cfg = {
+    ...DEFAULT_CONFIG,
+    survivalTurnCount: { min: 5, max: 5 },
+    endPoints: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+    lures: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+    collectables: { min: 0, max: 0, mustCollectAtLeast: 0, canCollectNoMoreThan: 0 },
+  };
+  const { level } = generateLevel('survival-enemy-pins', cfg);
+  assert.ok(level, 'a survival level generates');
+  const h = level.grid.length;
+  const w = level.grid[0].length;
+  // JSON row 0 is the bottom edge on screen.
+  assert.ok(level.grid[0].every((t) => t === T.ENEMY_PIN), 'the bottom row is enemy pins');
+  assert.ok(level.grid[h - 1].every((t) => t === T.EDGE), 'the top row stays edge');
+  for (let r = 1; r < h; r++) {
+    assert.equal(level.grid[r][0], T.EDGE, 'the left side stays edge');
+    assert.equal(level.grid[r][w - 1], T.EDGE, 'the right side stays edge');
+  }
+  assert.equal(level.objectives.ReachEdge, true, 'survival now ends by reaching a pin');
+  assert.equal(level.objectives.SurvivalTurnCount, 5);
+});
+
+test('stepping on an enemy pin catches the piggy', () => {
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['21 21 21', '0 0 0', '0 3 0'],
+    objectives: { ReachEdge: true, SurvivalTurnCount: 2 },
+  }));
+  game.stepForward(); // onto (1,1) — not yet a pin
+  assert.equal(game.players()[0].alive, true);
+  game.stepForward(); // onto the enemy pin at (0,1)
+  const p = game.players()[0];
+  assert.equal(p.alive, false);
+  assert.equal(p.killedBy, 'enemypin');
+  assert.ok(p.caughtAt > 0, 'the red caught hex is timed to the landing');
+  assert.equal(game.status, 'lost');
+  assert.equal(game.loseReason, 'The piggy was caught on an enemy pin');
+});
+
+test('enemy pins turn safe once the survival turns are done, and undo restores them', () => {
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['21 21 21', '0 0 0', '0 3 0'],
+    objectives: { ReachEdge: true, SurvivalTurnCount: 1 },
+  }));
+  assert.equal(game.terrain[0][1], T.ENEMY_PIN);
+  game.stepForward(); // turn 1: the piggy moves to (1,1); the timer completes
+  assert.equal(game.terrain[0][1], T.PIN, 'the pins flipped to safe');
+  assert.equal(game.status, 'playing');
+  game.rewind(); // undo the turn that completed the timer
+  assert.equal(game.terrain[0][1], T.ENEMY_PIN, 'undo brings the enemy pins back');
+  assert.equal(game.turn, 0);
+  game.stepForward(); // turn 1 again: pins flip
+  game.stepForward(); // turn 2: onto the (now safe) pin
+  assert.equal(game.players()[0].finished, true);
+  assert.equal(game.status, 'won');
+});
+
+test('the enemy pin is a bigger red ring, not lit by the path', () => {
+  const render = readFileSync(path.join(ROOT, 'js/render.js'), 'utf8');
+  assert.ok(render.includes('t === T.ENEMY_PIN'), 'the renderer draws enemy pins');
+  assert.ok(render.includes('s * 0.248 * 1.5'), 'the ring is 1.5x a safe pin');
+  assert.ok(render.includes('hexA(COLORS.enemy, 0.8)'), 'the ring is red at 0.8 alpha');
+  assert.ok(render.includes('game.terrain[step.row]?.[step.col] === T.ENEMY_PIN'),
+    'paths skip dots on enemy pins');
+  const types = readFileSync(path.join(ROOT, 'js/types.js'), 'utf8');
+  assert.ok(types.includes('ENEMY_PIN: 21'), 'enemy pin is a port-only type code');
 });
