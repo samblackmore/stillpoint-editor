@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=44';
-import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=44';
+import { T } from './types.js?v=45';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=45';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),

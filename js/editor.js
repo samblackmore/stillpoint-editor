@@ -1,10 +1,10 @@
 // Level editor: paint cells on a hex grid, set objectives, export the same
 // JSON format the game (and Unity) loads. Playtest runs the draft in the
 // game via localStorage.
-import { T } from './types.js?v=44';
-import { Game } from './engine.js?v=44';
-import { Renderer } from './render.js?v=44';
-import { parseLevel, serializeLevel } from './levels.js?v=44';
+import { T } from './types.js?v=45';
+import { Game } from './engine.js?v=45';
+import { Renderer } from './render.js?v=45';
+import { parseLevel, serializeLevel } from './levels.js?v=45';
 
 const $ = (id) => document.getElementById(id);
 
@@ -34,6 +34,15 @@ let renderer = null;
 let width = 9;
 let height = 9;
 
+// A CollectOrder imported from JSON. The editor has no UI for it yet,
+// and readObjectives() rebuilds the objectives from the form controls
+// on every render — so without keeping it here, an imported order would
+// be dropped the moment the board redraws (and painting or resizing
+// would drop it too). The import handler sets these (clearing them when
+// the imported level has no order, so a stale one can't leak).
+let importedOrder = [];
+let importedOrderIsOwner = false;
+
 function currentDef() {
   return {
     grid: game ? game.def.grid : blankGrid(),
@@ -62,6 +71,12 @@ function readObjectives() {
   if (col > 0) collect.push({ ItemType: T.COLLECTABLE, CollectAtLeast: col, CollectNoMoreThan: 0 });
   if (lure > 0) collect.push({ ItemType: T.LURE, CollectAtLeast: lure, CollectNoMoreThan: 0 });
   if (collect.length) o.CollectItemObjectives = collect;
+  // An imported collect order (see importedOrder above): the form has
+  // no control for it, so it is carried through unchanged.
+  if (importedOrder.length > 0) {
+    o.CollectOrder = [...importedOrder];
+    o.CollectOrderIsOwner = importedOrderIsOwner;
+  }
   return o;
 }
 
@@ -169,6 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('survive').value = def.objectives.SurvivalTurnCount || 0;
       $('sleeping').checked = !!def.sleeping;
       $('noStep').checked = !!def.disableStepForward;
+      // Keep an imported collect order (the form has no control for it,
+      // so readObjectives would otherwise drop it on the render below).
+      importedOrder = [...(def.objectives.CollectOrder || [])];
+      importedOrderIsOwner = !!def.objectives.CollectOrderIsOwner;
       game = new Game().loadLevel(def);
       render();
     } catch (e) {

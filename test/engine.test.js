@@ -823,3 +823,22 @@ test('the order numbers are little green circles and the box shows failed/option
   assert.ok(css.includes('.obj-fail'), 'the failed mark is styled');
   assert.ok(css.includes('li.optional'), 'optional objectives are dimmed');
 });
+
+test('the editor keeps an imported collect order through re-renders', () => {
+  // v44's live check failed here: Import from text parsed the order,
+  // then render() rebuilt the objectives from the form controls (which
+  // have no order input) and dropped it, so the game never saw it.
+  const editor = readFileSync(path.join(ROOT, 'js/editor.js'), 'utf8');
+  assert.ok(editor.includes('let importedOrder = []'),
+    'the imported order is kept in module state');
+  assert.ok(editor.includes('importedOrder = [...(def.objectives.CollectOrder || [])]'),
+    'import sets it from the parsed level (and clears a stale one)');
+  assert.ok(editor.includes('o.CollectOrder = [...importedOrder]'),
+    'readObjectives carries it through every re-render');
+  // And the underlying round-trip preserves it (parse -> serialize).
+  const def = parseLevel({
+    grid: ['18 18 18', '0 13 0', '0 13 0', '0 3 0'],
+    objectives: { ReachEdge: true, CollectOrder: [1, 0] },
+  });
+  assert.deepEqual(def.objectives.CollectOrder, [1, 0]);
+});
