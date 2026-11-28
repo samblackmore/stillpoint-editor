@@ -18,8 +18,8 @@
 //     a player ending a turn next to one dies.
 //   - No flood spreading when a character has no path; it simply stays put.
 //   - No fog: the whole board is visible.
-import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=43';
-import { Nav, ORIENTATION } from './nav.js?v=43';
+import { T, RULES, ITEM_TYPES, STATIC_ITEM_TYPES, CHARACTER_KINDS } from './types.js?v=44';
+import { Nav, ORIENTATION } from './nav.js?v=44';
 
 // Unity turn animation (UnitController + Character.AnimateMove): the
 // first character starts at once (MoveDelayInitial 0), each next
@@ -94,6 +94,7 @@ export class Game {
     this.wallsBuilt = 0;
     this.collected = { [T.ENDPOINT]: 0, [T.COLLECTABLE]: 0, [T.LURE]: 0, [T.WAYPOINT]: 0 };
     this.collectOrderIndex = 0;
+    this.collectOrderFailed = false; // a diamond arrived out of order — the order objective has failed
     this.history = [];
     this.previewState = null;
     // Visual-only animation state (never snapshotted): the staged move
@@ -262,6 +263,7 @@ export class Game {
       wallsBuilt: this.wallsBuilt,
       collected: this.collected,
       collectOrderIndex: this.collectOrderIndex,
+      collectOrderFailed: this.collectOrderFailed,
     }));
   }
 
@@ -276,6 +278,7 @@ export class Game {
     this.wallsBuilt = snap.wallsBuilt;
     this.collected = snap.collected;
     this.collectOrderIndex = snap.collectOrderIndex;
+    this.collectOrderFailed = snap.collectOrderFailed;
     this.status = 'playing';
     this.winReason = null;
     this.loseReason = null;
@@ -437,10 +440,11 @@ export class Game {
       this.items.delete(k);
       // Unity counts a "collect" by items disappearing off the board,
       // whoever picked them up (ObjectivesBox: OriginalItemCount -
-      // Count) — so the counter rises for enemies too, not just the player.
-      if (this.collectOrderApplies(item)) {
-        this.collected[item.type]++;
-      }
+      // Count) — so the counter rises for enemies too, not just the player,
+      // whether or not the diamond was the next one in the order.
+      this.collected[item.type]++;
+      // The order objective tracks the sequence separately (below).
+      this.trackCollectOrder(item);
       // A player collecting a waypoint (endpoint) stops the finish flag
       // (Unity: CommitTurnsUntilWinOrLose breaks on EndPoint pickup).
       if (item.type === T.ENDPOINT && mover.kind === 'player') {
@@ -497,16 +501,37 @@ export class Game {
     }
   }
 
-  collectOrderApplies(item) {
+  // Advance the collect-order sequence for a diamond pickup, or break
+  // it. `collectOrderIndex` is how many diamonds have been collected in
+  // the correct order so far (a prefix of the sequence); once a diamond
+  // arrives out of order the objective has failed (Unity: IsFailed, and
+  // its number markers hide) and the index stops advancing. The count
+  // above is separate — Unity counts a collect by removal, so an
+  // out-of-order diamond still counts toward "collect at least N".
+  trackCollectOrder(item) {
     const order = this.def.objectives?.CollectOrder;
-    if (!order || order.length === 0) return true;
-    if (item.type !== T.COLLECTABLE) return true;
+    if (!order || order.length === 0) return;
+    if (item.type !== T.COLLECTABLE) return;
+    if (this.collectOrderFailed) return;
+    if (this.collectOrderIndex >= order.length) return; // sequence complete
     const expected = order[this.collectOrderIndex];
     if (item.order === expected) {
       this.collectOrderIndex++;
-      return true;
+    } else {
+      this.collectOrderFailed = true;
     }
-    return false;
+  }
+
+  // The 1-based number shown over a diamond in a CollectOrder level
+  // (its position in the pickup sequence), or null when the level has
+  // no order objective. The port's CollectOrder is the sequence of
+  // diamond row-major indices in pickup order, so the number is the
+  // diamond's index into that sequence.
+  collectOrderNumber(itemOrder) {
+    const order = this.def.objectives?.CollectOrder;
+    if (!order || order.length === 0) return null;
+    const i = order.indexOf(itemOrder);
+    return i < 0 ? null : i + 1;
   }
 
   // ---- Objectives / win / lose ----
@@ -591,6 +616,19 @@ export class Game {
         done: false, unsupported: true,
       });
     }
+    if (o.CollectOrder && o.CollectOrder.length > 0) {
+      // Unity's literal text, and IsOptional in Unity: it doesn't block
+      // the win, but collecting out of order fails it (and hides the
+      // number markers over the diamonds).
+      const total = o.CollectOrder.length;
+      list.push({
+        id: 'collect-order', label: 'collect in order',
+        done: !this.collectOrderFailed && this.collectOrderIndex >= total,
+        failed: this.collectOrderFailed,
+        optional: true,
+        progress: `${this.collectOrderIndex}/${total}`,
+      });
+    }
     return list;
   }
 
@@ -603,7 +641,11 @@ export class Game {
   }
 
   anyObjectiveFailed() {
-    return this.objectiveList().some((o) => o.failed);
+    // Only a failed REQUIRED objective ends the level (Unity: a failed
+    // optional objective just sits failed in the box — the "collect in
+    // order" objective is optional, so breaking the order marks it
+    // failed and hides its markers but doesn't lose the level on its own).
+    return this.requiredObjectives().some((o) => o.failed);
   }
 
   checkEnd() {

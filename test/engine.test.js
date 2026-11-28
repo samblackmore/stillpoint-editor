@@ -757,3 +757,69 @@ test('the renderer draws sparkles and safe/caught hexes, and game text is not se
   assert.ok(css.includes('input, textarea, select'),
     'form fields keep text selection');
 });
+
+// ---------- ordered collect (v44) ----------
+
+test('ordered collect: diamonds in order complete the objective', () => {
+  // 3-wide: two diamonds stacked above the piggy, pins on top.
+  // CollectOrder [1, 0] means the lower diamond (row-major order 1)
+  // is first — the piggy meets it first on its way up.
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 13 0', '0 13 0', '0 3 0'],
+    objectives: { ReachEdge: true, CollectOrder: [1, 0] },
+  }));
+  const orderObj = () => game.objectiveList().find((o) => o.id === 'collect-order');
+  assert.equal(orderObj().label, 'collect in order');
+  assert.equal(orderObj().progress, '0/2');
+  assert.equal(orderObj().optional, true);
+  assert.equal(orderObj().done, false);
+  assert.equal(orderObj().failed, false);
+  // The numbers over the diamonds are the 1-based pickup positions.
+  assert.equal(game.collectOrderNumber(1), 1);
+  assert.equal(game.collectOrderNumber(0), 2);
+  game.stepForward(); // onto the order-1 diamond
+  assert.equal(game.collected[T.COLLECTABLE], 1);
+  assert.equal(game.collectOrderIndex, 1);
+  assert.equal(game.collectOrderFailed, false);
+  assert.equal(orderObj().progress, '1/2');
+  game.stepForward(); // onto the order-0 diamond
+  assert.equal(game.collected[T.COLLECTABLE], 2);
+  assert.equal(game.collectOrderIndex, 2);
+  assert.equal(orderObj().done, true);
+  game.stepForward(); // onto the pin — win
+  assert.equal(game.status, 'won');
+});
+
+test('ordered collect: the wrong diamond first fails the objective, and undo restores it', () => {
+  const game = new Game().loadLevel(parseLevel({
+    grid: ['18 18 18', '0 13 0', '0 13 0', '0 3 0'],
+    objectives: { ReachEdge: true, CollectOrder: [0, 1] },
+  }));
+  const orderObj = () => game.objectiveList().find((o) => o.id === 'collect-order');
+  game.stepForward(); // onto the order-1 diamond, but order 0 was expected
+  assert.equal(game.collected[T.COLLECTABLE], 1); // still counts (by removal)
+  assert.equal(game.collectOrderIndex, 0);
+  assert.equal(game.collectOrderFailed, true);
+  assert.equal(orderObj().failed, true);
+  assert.equal(game.status, 'playing'); // optional failure doesn't end the level
+  game.rewind(); // undo the bad pickup
+  assert.equal(game.collectOrderFailed, false);
+  assert.equal(game.collectOrderIndex, 0);
+  assert.equal(game.collected[T.COLLECTABLE], 0);
+  assert.equal(orderObj().failed, false);
+  assert.equal(orderObj().progress, '0/2');
+});
+
+test('the order numbers are little green circles and the box shows failed/optional', () => {
+  const render = readFileSync(path.join(ROOT, 'js/render.js'), 'utf8');
+  assert.ok(render.includes('drawOrderNumber'), 'the order-number draw exists');
+  assert.ok(render.includes("s * 0.375, '#44d6a0'"), 'the circle is green, 0.75 across');
+  assert.ok(render.includes('x - s * 0.3, y + s * 0.3'), 'the circle sits down-left of the diamond');
+  assert.ok(render.includes('if (!game.collectOrderFailed)'), 'the markers hide when the order breaks');
+  const app = readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  assert.ok(app.includes("o.failed ? '✗ '"), 'a failed objective shows a red ✗');
+  assert.ok(app.includes("o.optional ? 'optional'"), 'an optional objective is dimmed');
+  const css = readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.ok(css.includes('.obj-fail'), 'the failed mark is styled');
+  assert.ok(css.includes('li.optional'), 'optional objectives are dimmed');
+});

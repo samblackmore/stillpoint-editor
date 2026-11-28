@@ -120,8 +120,8 @@
 //     level JSONs carry no colour, so one blue for now).
 //   - EndPoint prefab is white hex-outline segments: the safe zone is a
 //     white hex outline, with the small green waypoint diamond inside it.
-import { T } from './types.js?v=43';
-import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=43';
+import { T } from './types.js?v=44';
+import { MOVE_MS, MOVE_SNAP, MOVE_SNAP_MS } from './engine.js?v=44';
 
 // CollectableBase explosion (Unity): on pickup the 6 hex segments fly
 // apart in six directions — easeOutQuad over 1s (ExplodeTweenType 2),
@@ -529,7 +529,18 @@ export class Renderer {
       if (type === T.ENDPOINT) this.drawHexItem(x, y, s, COLORS.endpointHex, 0.8, lit);
       else if (type === T.LURE) this.drawHexItem(x, y, s, COLORS.lureHex, 0.784, lit);
       else if (type === T.WAYPOINT) this.drawHexItem(x, y, s, COLORS.waypointHex, 0.8, lit);
-      else if (type === T.COLLECTABLE) this.drawDiamond(x, y, 1.5, COLORS.collectable);
+      else if (type === T.COLLECTABLE) {
+        this.drawDiamond(x, y, 1.5, COLORS.collectable);
+        // Ordered collect (CollectOrder): the pickup number in a little
+        // green circle, down-left of the diamond (Counter prefab: a
+        // white_circle tinted PastelGreen, 0.75 across, offset -0.3,
+        // -0.3). Hidden once the order is broken (Unity hides the
+        // markers when the objective fails).
+        if (!game.collectOrderFailed) {
+          const num = game.collectOrderNumber(item.order);
+          if (num !== null) this.drawOrderNumber(x - s * 0.3, y + s * 0.3, s, num);
+        }
+      }
       else if (type === T.OLDTIMER) this.drawOldTimer(x, y, s);
     }
 
@@ -986,6 +997,19 @@ export class Renderer {
     ctx.closePath();
     ctx.fillStyle = fill;
     ctx.fill();
+  }
+
+  // The collect-order number (Counter prefab): a white_circle tinted
+  // PastelGreen (#44d6a0), 0.75 units across, with the order number in
+  // white centred in it (TextMesh, white, centred, CharacterSize 0.1).
+  drawOrderNumber(cx, cy, s, num) {
+    const ctx = this.ctx;
+    this.circle(cx, cy, s * 0.375, '#44d6a0');
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.round(s * 0.45)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(num), cx, cy + 1);
   }
 
   drawOldTimer(x, y, s) {

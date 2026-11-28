@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=43';
-import { Renderer } from './render.js?v=43';
-import { parseLevel } from './levels.js?v=43';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=43';
+import { Game } from './engine.js?v=44';
+import { Renderer } from './render.js?v=44';
+import { parseLevel } from './levels.js?v=44';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=44';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -176,12 +176,14 @@ function updateHUD() {
   }
   for (const o of objs) {
     const li = document.createElement('li');
-    li.className = o.done ? 'done' : '';
     // Unity's objectives panel: hollow circle / green check, label in
-    // white, numbers in yellow.
+    // white, numbers in yellow. A failed objective gets a red ✗ (and
+    // red text); an optional one is dimmed, as Unity shows it at 0.4
+    // alpha.
+    li.className = [o.done ? 'done' : '', o.failed ? 'failed' : '', o.optional ? 'optional' : ''].filter(Boolean).join(' ');
     const mark = document.createElement('span');
-    mark.className = o.done ? 'obj-check' : '';
-    mark.textContent = o.done ? '✓ ' : '○ ';
+    mark.className = o.done ? 'obj-check' : o.failed ? 'obj-fail' : '';
+    mark.textContent = o.done ? '✓ ' : o.failed ? '✗ ' : '○ ';
     li.appendChild(mark);
     const label = document.createElement('span');
     label.innerHTML = escapeHtml(o.label).replace(
