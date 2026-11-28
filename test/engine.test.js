@@ -684,3 +684,17 @@ test('the game buttons match Unity: bottom bar, translucent discs, SVG icons', (
   assert.ok(css.includes('rgba(255, 255, 255, 0.196)'),
     'the discs use Unity\'s 0.196-alpha white');
 });
+
+test('a bare ?random puts the rolled seed in the URL', () => {
+  // A breadcrumb or the home Random button rolls a fresh seed — the URL
+  // has to carry it, or a refresh / shared link rolls a different level.
+  const app = readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  assert.ok(app.includes('function randomLevelUrl(factoryId, seed)'),
+    'the random-level URL helper exists');
+  assert.ok(app.includes('randomLevelUrl(factoryId, seed)'),
+    'the helper is used to update the URL');
+  assert.ok(app.includes("if (!params.get('seed'))"),
+    'the URL is only rewritten when the seed was rolled, not given');
+  assert.ok(app.includes('history.replaceState(null, \'\', randomLevelUrl(factoryId, seed))'),
+    'the rolled seed is written into the URL');
+});

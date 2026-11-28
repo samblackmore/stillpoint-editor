@@ -1,9 +1,9 @@
 // App wiring for index.html: menu (daily, random), play view,
 // tap-to-preview / tap-to-commit input, HUD, best scores in localStorage.
-import { Game } from './engine.js?v=41';
-import { Renderer } from './render.js?v=41';
-import { parseLevel } from './levels.js?v=41';
-import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=41';
+import { Game } from './engine.js?v=42';
+import { Renderer } from './render.js?v=42';
+import { parseLevel } from './levels.js?v=42';
+import { generateLevel, dailySeed, DEFAULT_CONFIG } from './generator.js?v=42';
 
 const $ = (id) => document.getElementById(id);
 const BEST_KEY = 'stillpoint-html-best';
@@ -82,6 +82,12 @@ function renderCrumbs(meta) {
     crumbs += sep + link('editor.html', 'Editor') + sep + current('Draft');
   }
   nav.innerHTML = crumbs;
+}
+
+// The URL for a random level: the seed is part of it, so a refresh or
+// a shared link replays this exact level (never a bare ?random).
+function randomLevelUrl(factoryId, seed) {
+  return `?random${factoryId ? `&factory=${encodeURIComponent(factoryId)}` : ''}&seed=${encodeURIComponent(seed)}`;
 }
 
 // The big Random button on the home screen plays with the last-used
@@ -278,7 +284,7 @@ async function nextFactoryLevel() {
   const res = generateLevel(seed, cfg, factory.color || null);
   if (!res) return;
   try {
-    history.replaceState(null, '', `?random&factory=${encodeURIComponent(factoryId)}&seed=${encodeURIComponent(seed)}`);
+    history.replaceState(null, '', randomLevelUrl(factoryId, seed));
   } catch { /* file:// or sandboxed: the URL just doesn't update */ }
   startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed} (${factory.name})`, kind: 'random', factory: factoryId, seed, factoryName: factory.name });
 }
@@ -336,6 +342,15 @@ async function startFromParams() {
     // The level takes its factory's chapter colour as its background.
     const res = generateLevel(seed, cfg, factoryColor);
     if (!res) return showMenu();
+    // A bare ?random (or ?random&factory=) rolls a fresh seed — put it
+    // in the URL so a refresh or a shared link replays this exact
+    // level, the way the seed input and tap-anywhere chaining do.
+    // A seed given in the URL is already there, so leave it alone.
+    if (!params.get('seed')) {
+      try {
+        history.replaceState(null, '', randomLevelUrl(factoryId, seed));
+      } catch { /* file:// or sandboxed: the URL just doesn't update */ }
+    }
     startLevel(res.level, { id: `gen-${seed}`, name: `Random level — seed ${seed}${factoryName}`, kind: 'random', factory: factoryId || null, seed, factoryName: factoryRawName });
     return;
   }
